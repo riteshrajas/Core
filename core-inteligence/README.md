@@ -44,6 +44,36 @@ Detailed architecture and sprint roadmap: see [docs/apex-multi-agent-architectur
 
    npm run cli
 
+## Pipecat Setup
+
+Pipecat CLI is installed locally in this repo at `.venv-pipecat` and a scaffolded bot project is available at `pipecat-bot/`.
+
+Quick checks:
+
+- `npm run pipecat:version`
+- `npm run pipecat:help`
+- `npm run pipecat:init:help`
+
+Scaffolded project:
+
+- Bot root: `pipecat-bot/`
+- Server: `pipecat-bot/server/bot.py`
+- Client: `pipecat-bot/client/` (React + Vite)
+
+Run the Pipecat server:
+
+1. `cd pipecat-bot/server`
+2. `copy .env.example .env`
+3. `uv sync` (or use python venv + pip if uv is unavailable)
+4. `uv run bot.py`
+
+Run the Pipecat client:
+
+1. `cd pipecat-bot/client`
+2. `npm install`
+3. `copy env.example .env.local`
+4. `npm run dev`
+
 Server URLs by default:
 
 - MCP: http://127.0.0.1:3000/mcp

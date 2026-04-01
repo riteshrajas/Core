@@ -3,4 +3,5 @@ node_modules
 .env
 *.log
 .apex-memory.json
+.venv-pipecat/
 
