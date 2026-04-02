@@ -2252,7 +2252,7 @@ export async function bridgeMain(args: string[]): Promise<void> {
     })
     // biome-ignore lint/suspicious/noConsole: intentional dialog output
     console.log(
-      `\nAPEX Remote Control is launching in spawn mode which lets you create new sessions in this project from APEX Code on Web or your Mobile app. Learn more here: https://code.APEX.com/docs/en/remote-control\n\n` +
+      `\nAPEX Remote Control is launching in spawn mode which lets you create new sessions in this project from APEX Code on Web or your Mobile app. Learn more here: https://code.claude.com/docs/en/remote-control\n\n` +
         `Spawn mode for this project:\n` +
         `  [1] same-dir \u2014 sessions share the current directory (default)\n` +
         `  [2] worktree \u2014 each session gets an isolated git worktree\n\n` +

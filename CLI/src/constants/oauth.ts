@@ -98,7 +98,7 @@ type OauthConfig = {
 // Production OAuth configuration - Used in normal operation
 const PROD_OAUTH_CONFIG = {
   BASE_API_URL: 'https://api.anthropic.com',
-  CONSOLE_AUTHORIZE_URL: 'https://platform.APEX.com/oauth/authorize',
+  CONSOLE_AUTHORIZE_URL: 'https://platform.claude.com/oauth/authorize',
   // Bounces through APEX.com/cai/* so CLI sign-ins connect to APEX.com
   // visits for attribution. 307s to APEX.ai/oauth/authorize in two hops.
   APEX_AI_AUTHORIZE_URL: 'https://APEX.com/cai/oauth/authorize',
@@ -107,16 +107,16 @@ const PROD_OAUTH_CONFIG = {
   OPENAI_AUTHORIZE_URL: 'https://openai.com/oauth/authorize',
   OPENAI_TOKEN_URL: 'https://openai.com/oauth/token',
   OPENAI_CLIENT_ID: 'APEX-code-client',
-  TOKEN_URL: 'https://platform.APEX.com/v1/oauth/token',
+  TOKEN_URL: 'https://platform.claude.com/v1/oauth/token',
   API_KEY_URL: 'https://api.anthropic.com/api/oauth/APEX_cli/create_api_key',
   ROLES_URL: 'https://api.anthropic.com/api/oauth/APEX_cli/roles',
   CONSOLE_SUCCESS_URL:
-    'https://platform.APEX.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3DAPEX-code',
+    'https://platform.claude.com/buy_credits?returnUrl=/oauth/code/success%3Fapp%3DAPEX-code',
   APEXAI_SUCCESS_URL:
-    'https://platform.APEX.com/oauth/code/success?app=APEX-code',
+    'https://platform.claude.com/oauth/code/success?app=APEX-code',
   OPENAI_SUCCESS_URL:
     'https://openai.com/oauth/success?app=APEX-code',
-  MANUAL_REDIRECT_URL: 'https://platform.APEX.com/oauth/code/callback',
+  MANUAL_REDIRECT_URL: 'https://platform.claude.com/oauth/code/callback',
   CLIENT_ID: '9d1c250a-e61b-44d9-88ed-5944d1962f5e',
   // No suffix for production config
   OAUTH_FILE_SUFFIX: '',

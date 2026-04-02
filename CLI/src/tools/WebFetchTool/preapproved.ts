@@ -13,8 +13,8 @@
 
 export const PREAPPROVED_HOSTS = new Set([
   // Anthropic
-  'platform.APEX.com',
-  'code.APEX.com',
+  'platform.claude.com',
+  'code.claude.com',
   'modelcontextprotocol.io',
   'github.com/anthropics',
   'agentskills.io',

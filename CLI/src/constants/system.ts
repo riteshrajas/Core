@@ -6,9 +6,9 @@ import { isEnvDefinedFalsy } from '../utils/envUtils.js'
 import { getAPIProvider } from '../utils/model/providers.js'
 import { getWorkload } from '../utils/workloadContext.js'
 
-const DEFAULT_PREFIX = `You are APEX Code, Anthropic's official CLI for APEX.`
-const AGENT_SDK_APEX_CODE_PRESET_PREFIX = `You are APEX Code, Anthropic's official CLI for APEX, running within the APEX Agent SDK.`
-const AGENT_SDK_PREFIX = `You are a APEX agent, built on Anthropic's APEX Agent SDK.`
+const DEFAULT_PREFIX = `You are APEX Code, Pyintel's official CLI.`
+const AGENT_SDK_APEX_CODE_PRESET_PREFIX = `You are APEX Code, Pyintel's official CLI, running within the APEX Agent SDK.`
+const AGENT_SDK_PREFIX = `You are a APEX agent, built on Pyintel's APEX Agent SDK.`
 
 const CLI_SYSPROMPT_PREFIX_VALUES = [
   DEFAULT_PREFIX,

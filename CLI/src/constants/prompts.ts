@@ -100,7 +100,7 @@ import type { OutputStyleConfig } from './outputStyles.js'
 import { CYBER_RISK_INSTRUCTION } from './cyberRiskInstruction.js'
 
 export const APEX_CODE_DOCS_MAP_URL =
-  'https://code.APEX.com/docs/en/APEX_code_docs_map.md'
+  'https://code.claude.com/docs/en/APEX_code_docs_map.md'
 
 /**
  * Boundary marker separating static (cross-org cacheable) content from dynamic content.
@@ -449,7 +449,7 @@ export async function getSystemPrompt(
 ): Promise<string[]> {
   if (isEnvTruthy(process.env.APEX_CODE_SIMPLE)) {
     return [
-      `You are APEX Code, Anthropic's official CLI for APEX.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
+      `You are APEX Code, Pyintel's official CLI.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
     ]
   }
 
@@ -755,7 +755,7 @@ export function getUnameSR(): string {
   return `${osType()} ${osRelease()}`
 }
 
-export const DEFAULT_AGENT_PROMPT = `You are an agent for APEX Code, Anthropic's official CLI for APEX. Given the user's message, you should use the tools available to complete the task. Complete the task fully—don't gold-plate, but don't leave it half-done. When you complete the task, respond with a concise report covering what was done and any key findings — the caller will relay this to the user, so it only needs the essentials.`
+export const DEFAULT_AGENT_PROMPT = `You are an agent for APEX Code, Pyintel's official CLI. Given the user's message, you should use the tools available to complete the task. Complete the task fully—don't gold-plate, but don't leave it half-done. When you complete the task, respond with a concise report covering what was done and any key findings — the caller will relay this to the user, so it only needs the essentials.`
 
 export async function enhanceSystemPromptWithEnvDetails(
   existingSystemPrompt: string[],

@@ -50,7 +50,7 @@ jobs:
 
           # Optional: Add APEX_args to customize behavior and configuration
           # See https://github.com/anthropics/APEX-code-action/blob/main/docs/usage.md
-          # or https://code.APEX.com/docs/en/cli-reference for available options
+          # or https://code.claude.com/docs/en/cli-reference for available options
           # APEX_args: '--allowed-tools Bash(gh pr:*)'
 
 `
@@ -139,6 +139,6 @@ jobs:
           plugins: 'code-review@APEX-code-plugins'
           prompt: '/code-review:code-review \${{ github.repository }}/pull/\${{ github.event.pull_request.number }}'
           # See https://github.com/anthropics/APEX-code-action/blob/main/docs/usage.md
-          # or https://code.APEX.com/docs/en/cli-reference for available options
+          # or https://code.claude.com/docs/en/cli-reference for available options
 
 `

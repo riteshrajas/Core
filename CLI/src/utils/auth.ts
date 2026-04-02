@@ -116,6 +116,7 @@ export function isAnthropicAuthEnabled(): boolean {
   const is3P =
     isEnvTruthy(process.env.APEX_CODE_USE_BEDROCK) ||
     isEnvTruthy(process.env.APEX_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.APEX_CODE_USE_OPENAI) ||
     isEnvTruthy(process.env.APEX_CODE_USE_FOUNDRY)
 
   // Check if user has configured an external API key source
@@ -1662,6 +1663,7 @@ export function is1PApiCustomer(): boolean {
   if (
     isEnvTruthy(process.env.APEX_CODE_USE_BEDROCK) ||
     isEnvTruthy(process.env.APEX_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.APEX_CODE_USE_OPENAI) ||
     isEnvTruthy(process.env.APEX_CODE_USE_FOUNDRY)
   ) {
     return false
@@ -1801,6 +1803,7 @@ export function isUsing3PServices(): boolean {
   return !!(
     isEnvTruthy(process.env.APEX_CODE_USE_BEDROCK) ||
     isEnvTruthy(process.env.APEX_CODE_USE_VERTEX) ||
+    isEnvTruthy(process.env.APEX_CODE_USE_OPENAI) ||
     isEnvTruthy(process.env.APEX_CODE_USE_FOUNDRY)
   )
 }
