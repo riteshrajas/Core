@@ -1,0 +1,10 @@
+node_modules
+/dist
+.env
+*.log
+.apex-memory.json
+.venv-pipecat/
+pipecat-bot/server/.venv/
+pipecat-bot/client/node_modules/
+pipecat-bot/client/dist/
+
