@@ -31,6 +31,9 @@ type OAuthStatus = {
   state: 'platform_setup';
 } // Show platform setup info (Bedrock/Vertex/Foundry)
 | {
+  state: 'pyintel_setup';
+} // Show Pyintel Foundry setup info
+| {
   state: 'ready_to_start';
 } // Flow started, waiting for browser to open
 | {
@@ -52,6 +55,54 @@ type OAuthStatus = {
   toRetry?: OAuthStatus;
 };
 const PASTE_HERE_MSG = 'Paste code here if prompted > ';
+
+function PyintelSetup({ setOAuthStatus }: { setOAuthStatus: (status: OAuthStatus) => void }) {
+  const [detecting, setDetecting] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    fetch('http://127.0.0.1:11434/')
+      .then(res => res.text())
+      .then(text => {
+        if (mounted && text.includes("Ollama is running")) {
+          setOAuthStatus({ state: 'success', token: 'mock-local-token' });
+        } else {
+          if (mounted) setDetecting(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) setDetecting(false);
+      });
+    return () => { mounted = false; };
+  }, [setOAuthStatus]);
+
+  if (detecting) {
+    return (
+      <Box flexDirection="column" gap={1} marginTop={1}>
+        <Spinner />
+        <Text>Detecting local Ollama...</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column" gap={1} marginTop={1}>
+      <Text bold={true}>Using Pyintel Foundry</Text>
+      <Box flexDirection="column" gap={1}>
+        <Text>Configure your local environment variables for Pyintel Foundry (Ollama, LM Studio API, etc), such as pointing your endpoint to http://localhost:11434.</Text>
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold={true}>Documentation:</Text>
+          <Text>· Ollama: <Link url="https://ollama.com">https://ollama.com</Link></Text>
+          <Text>· LM Studio: <Link url="https://lmstudio.ai">https://lmstudio.ai</Link></Text>
+        </Box>
+        <Box marginTop={1}>
+          <Text dimColor={true}>Press <Text bold={true}>Enter</Text> to go back to login options.</Text>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 export function ConsoleOAuthFlow({
   onDone,
   startingMessage,
@@ -121,14 +172,14 @@ export function ConsoleOAuthFlow({
     isActive: oauthStatus.state === 'success' && mode !== 'setup-token'
   });
 
-  // Handle Enter to continue from platform setup
+  // Handle Enter to continue from platform/pyintel setup
   useKeybinding('confirm:yes', () => {
     setOAuthStatus({
       state: 'idle'
     });
   }, {
     context: 'Confirmation',
-    isActive: oauthStatus.state === 'platform_setup'
+    isActive: oauthStatus.state === 'platform_setup' || oauthStatus.state === 'pyintel_setup'
   });
 
   // Handle Enter to retry on error state
@@ -442,6 +493,9 @@ function OAuthStatusMessage(t0) {
           }, {
             label: <Text>OpenAI Codex account ·{" "}<Text dimColor={true}>ChatGPT Plus/Pro subscription</Text>{"\n"}</Text>,
             value: "codex"
+          }, {
+            label: <Text>Pyintel Foundry account ·{" "}<Text dimColor={true}>Basically What the core inteligence ran on (ollama, lm studio)</Text>{"\n"}</Text>,
+            value: "pyintel"
           }];
           $[5] = t6;
         } else {
@@ -454,6 +508,11 @@ function OAuthStatusMessage(t0) {
                 logEvent("tengu_oauth_platform_selected", {});
                 setOAuthStatus({
                   state: "platform_setup"
+                });
+              } else if (value_0 === "pyintel") {
+                logEvent("tengu_oauth_pyintel_selected", {});
+                setOAuthStatus({
+                  state: "pyintel_setup"
                 });
               } else if (value_0 === "codex") {
                 logEvent("tengu_oauth_codex_selected", {});
@@ -549,6 +608,8 @@ function OAuthStatusMessage(t0) {
         }
         return t8;
       }
+    case "pyintel_setup":
+      return <PyintelSetup setOAuthStatus={setOAuthStatus} />;
     case "waiting_for_login":
       {
         let t1;
