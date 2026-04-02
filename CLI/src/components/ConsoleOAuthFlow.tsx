@@ -179,7 +179,7 @@ export function ConsoleOAuthFlow({
     });
   }, {
     context: 'Confirmation',
-    isActive: oauthStatus.state === 'platform_setup' || oauthStatus.state === 'pyintel_setup'
+    isActive: oauthStatus.state === 'platform_setup' || oauthStatus.state === 'pyintel_setup' || oauthStatus.state === 'pyintel_setup' || oauthStatus.state === 'pyintel_setup'
   });
 
   // Handle Enter to retry on error state
@@ -514,7 +514,17 @@ function OAuthStatusMessage(t0) {
                 setOAuthStatus({
                   state: "pyintel_setup"
                 });
-              } else if (value_0 === "codex") {
+              } else if (value_0 === "pyintel") {
+                  logEvent("tengu_oauth_pyintel_selected", {});
+                  setOAuthStatus({
+                    state: "pyintel_setup"
+                  });
+                } else if (value_0 === "pyintel") {
+                  logEvent("tengu_oauth_pyintel_selected", {});
+                  setOAuthStatus({
+                    state: "pyintel_setup"
+                  });
+                } else if (value_0 === "codex") {
                 logEvent("tengu_oauth_codex_selected", {});
                 setLoginWithCodex(true);
                 setLoginWithClaudeAi(false);
@@ -551,7 +561,31 @@ function OAuthStatusMessage(t0) {
         }
         return t8;
       }
-    case "platform_setup":
+    case "pyintel_setup":
+        return (
+          <Box flexDirection="column" gap={1} marginTop={1}>
+            <Text bold={true}>Using Pyintel Foundry</Text>
+            <Box flexDirection="column" gap={1}>
+              <Text>Set the required environment variables (e.g. for Ollama or LM Studio), then restart Pyintel Code.</Text>
+              <Box marginTop={1}>
+                <Text dimColor={true}>Press <Text bold={true}>Enter</Text> to go back to login options.</Text>
+              </Box>
+            </Box>
+          </Box>
+        );
+      case "pyintel_setup":
+        return (
+          <Box flexDirection="column" gap={1} marginTop={1}>
+            <Text bold={true}>Using Pyintel Foundry</Text>
+            <Box flexDirection="column" gap={1}>
+              <Text>Set the required environment variables (e.g. for Ollama or LM Studio), then restart Pyintel Code.</Text>
+              <Box marginTop={1}>
+                <Text dimColor={true}>Press <Text bold={true}>Enter</Text> to go back to login options.</Text>
+              </Box>
+            </Box>
+          </Box>
+        );
+      case "platform_setup":
       {
         let t1;
         if ($[13] === Symbol.for("react.memo_cache_sentinel")) {
