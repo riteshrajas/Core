@@ -5,7 +5,7 @@
 <h1 align="center">free-code</h1>
 
 <p align="center">
-  <strong>The free build of Claude Code.</strong><br>
+  <strong>The free build of APEX Code.</strong><br>
   All telemetry stripped. All guardrails removed. All experimental features unlocked.<br>
   One binary, zero callbacks home.
 </p>
@@ -51,7 +51,7 @@ Then run `free-code` and use the `/login` command to authenticate with your pref
 
 ## What is this
 
-A clean, buildable fork of Anthropic's [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI -- the terminal-native AI coding agent. The upstream source became publicly available on March 31, 2026 through a source map exposure in the npm distribution.
+A clean, buildable fork of Anthropic's [APEX Code](https://docs.anthropic.com/en/docs/APEX-code) CLI -- the terminal-native AI coding agent. The upstream source became publicly available on March 31, 2026 through a source map exposure in the npm distribution.
 
 This fork applies three categories of changes on top of that snapshot:
 
@@ -65,13 +65,13 @@ The upstream binary phones home through OpenTelemetry/gRPC, GrowthBook analytics
 
 ### Security-prompt guardrails removed
 
-Anthropic injects system-level instructions into every conversation that constrain Claude's behavior beyond what the model itself enforces. These include hardcoded refusal patterns, injected "cyber risk" instruction blocks, and managed-settings security overlays pushed from Anthropic's servers.
+Anthropic injects system-level instructions into every conversation that constrain APEX's behavior beyond what the model itself enforces. These include hardcoded refusal patterns, injected "cyber risk" instruction blocks, and managed-settings security overlays pushed from Anthropic's servers.
 
 This build strips those injections. The model's own safety training still applies -- this just removes the extra layer of prompt-level restrictions that the CLI wraps around it.
 
 ### Experimental features unlocked
 
-Claude Code ships with 88 feature flags gated behind `bun:bundle` compile-time switches. Most are disabled in the public npm release. This build unlocks all 54 flags that compile cleanly. See [Experimental Features](#experimental-features) below, or refer to [FEATURES.md](FEATURES.md) for the full audit.
+APEX Code ships with 88 feature flags gated behind `bun:bundle` compile-time switches. Most are disabled in the public npm release. This build unlocks all 54 flags that compile cleanly. See [Experimental Features](#experimental-features) below, or refer to [FEATURES.md](FEATURES.md) for the full audit.
 
 ---
 
@@ -85,9 +85,9 @@ Use Anthropic's first-party API directly.
 
 | Model | ID |
 |---|---|
-| Claude Opus 4.6 | `claude-opus-4-6` |
-| Claude Sonnet 4.6 | `claude-sonnet-4-6` |
-| Claude Haiku 4.5 | `claude-haiku-4-5` |
+| APEX Opus 4.6 | `APEX-opus-4-6` |
+| APEX Sonnet 4.6 | `APEX-sonnet-4-6` |
+| APEX Haiku 4.5 | `APEX-haiku-4-5` |
 
 ### OpenAI Codex
 
@@ -100,7 +100,7 @@ Use OpenAI's Codex models for code generation. Requires a Codex subscription.
 | GPT-5.4 Mini | `gpt-5.4-mini` |
 
 ```bash
-export CLAUDE_CODE_USE_OPENAI=1
+export APEX_CODE_USE_OPENAI=1
 free-code
 ```
 
@@ -109,38 +109,38 @@ free-code
 Route requests through your AWS account via Amazon Bedrock.
 
 ```bash
-export CLAUDE_CODE_USE_BEDROCK=1
+export APEX_CODE_USE_BEDROCK=1
 export AWS_REGION="us-east-1"   # or AWS_DEFAULT_REGION
 free-code
 ```
 
-Uses your standard AWS credentials (environment variables, `~/.aws/config`, or IAM role). Models are mapped to Bedrock ARN format automatically (e.g., `us.anthropic.claude-opus-4-6-v1`).
+Uses your standard AWS credentials (environment variables, `~/.aws/config`, or IAM role). Models are mapped to Bedrock ARN format automatically (e.g., `us.anthropic.APEX-opus-4-6-v1`).
 
 | Variable | Purpose |
 |---|---|
-| `CLAUDE_CODE_USE_BEDROCK` | Enable Bedrock provider |
+| `APEX_CODE_USE_BEDROCK` | Enable Bedrock provider |
 | `AWS_REGION` / `AWS_DEFAULT_REGION` | AWS region (default: `us-east-1`) |
 | `ANTHROPIC_BEDROCK_BASE_URL` | Custom Bedrock endpoint |
 | `AWS_BEARER_TOKEN_BEDROCK` | Bearer token auth |
-| `CLAUDE_CODE_SKIP_BEDROCK_AUTH` | Skip auth (testing) |
+| `APEX_CODE_SKIP_BEDROCK_AUTH` | Skip auth (testing) |
 
 ### Google Cloud Vertex AI
 
 Route requests through your GCP project via Vertex AI.
 
 ```bash
-export CLAUDE_CODE_USE_VERTEX=1
+export APEX_CODE_USE_VERTEX=1
 free-code
 ```
 
-Uses Google Cloud Application Default Credentials (`gcloud auth application-default login`). Models are mapped to Vertex format automatically (e.g., `claude-opus-4-6@latest`).
+Uses Google Cloud Application Default Credentials (`gcloud auth application-default login`). Models are mapped to Vertex format automatically (e.g., `APEX-opus-4-6@latest`).
 
 ### Anthropic Foundry
 
 Use Anthropic Foundry for dedicated deployments.
 
 ```bash
-export CLAUDE_CODE_USE_FOUNDRY=1
+export APEX_CODE_USE_FOUNDRY=1
 export ANTHROPIC_FOUNDRY_API_KEY="..."
 free-code
 ```
@@ -152,10 +152,10 @@ Supports custom deployment IDs as model names.
 | Provider | Env Variable | Auth Method |
 |---|---|---|
 | Anthropic (default) | -- | `ANTHROPIC_API_KEY` or OAuth |
-| OpenAI Codex | `CLAUDE_CODE_USE_OPENAI=1` | OAuth via OpenAI |
-| AWS Bedrock | `CLAUDE_CODE_USE_BEDROCK=1` | AWS credentials |
-| Google Vertex AI | `CLAUDE_CODE_USE_VERTEX=1` | `gcloud` ADC |
-| Anthropic Foundry | `CLAUDE_CODE_USE_FOUNDRY=1` | `ANTHROPIC_FOUNDRY_API_KEY` |
+| OpenAI Codex | `APEX_CODE_USE_OPENAI=1` | OAuth via OpenAI |
+| AWS Bedrock | `APEX_CODE_USE_BEDROCK=1` | AWS credentials |
+| Google Vertex AI | `APEX_CODE_USE_VERTEX=1` | `gcloud` ADC |
+| Anthropic Foundry | `APEX_CODE_USE_FOUNDRY=1` | `ANTHROPIC_FOUNDRY_API_KEY` |
 
 ---
 
@@ -214,7 +214,7 @@ bun run ./scripts/build.ts --dev --feature=BRIDGE_MODE
 ./cli -p "what files are in this directory?"
 
 # Specify a model
-./cli --model claude-opus-4-6
+./cli --model APEX-opus-4-6
 
 # Run from source (slower startup)
 bun run dev
@@ -234,8 +234,8 @@ bun run dev
 | `ANTHROPIC_DEFAULT_OPUS_MODEL` | Custom Opus model ID |
 | `ANTHROPIC_DEFAULT_SONNET_MODEL` | Custom Sonnet model ID |
 | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Custom Haiku model ID |
-| `CLAUDE_CODE_OAUTH_TOKEN` | OAuth token via env |
-| `CLAUDE_CODE_API_KEY_HELPER_TTL_MS` | API key helper cache TTL |
+| `APEX_CODE_OAUTH_TOKEN` | OAuth token via env |
+| `APEX_CODE_API_KEY_HELPER_TTL_MS` | API key helper cache TTL |
 
 ---
 
@@ -247,7 +247,7 @@ The `bun run build:dev:full` build enables all 54 working feature flags. Highlig
 
 | Flag | Description |
 |---|---|
-| `ULTRAPLAN` | Remote multi-agent planning on Claude Code web (Opus-class) |
+| `ULTRAPLAN` | Remote multi-agent planning on APEX Code web (Opus-class) |
 | `ULTRATHINK` | Deep thinking mode -- type "ultrathink" to boost reasoning effort |
 | `VOICE_MODE` | Push-to-talk voice input and dictation |
 | `TOKEN_BUDGET` | Token budget tracking and usage warnings |
@@ -355,4 +355,4 @@ Contributions are welcome. If you're working on restoring one of the 34 broken f
 
 ## License
 
-The original Claude Code source is the property of Anthropic. This fork exists because the source was publicly exposed through their npm distribution. Use at your own discretion.
+The original APEX Code source is the property of Anthropic. This fork exists because the source was publicly exposed through their npm distribution. Use at your own discretion.

@@ -30,14 +30,14 @@ export const CODEX_MODELS = [
 export const DEFAULT_CODEX_MODEL = 'gpt-5.2-codex'
 
 /**
- * Maps Claude model names to corresponding Codex model names.
- * @param claudeModel - The Claude model name to map
+ * Maps APEX model names to corresponding Codex model names.
+ * @param APEXModel - The APEX model name to map
  * @returns The corresponding Codex model ID
  */
-export function mapClaudeModelToCodex(claudeModel: string | null): string {
-  if (!claudeModel) return DEFAULT_CODEX_MODEL
-  if (isCodexModel(claudeModel)) return claudeModel
-  const lower = claudeModel.toLowerCase()
+export function mapAPEXModelToCodex(APEXModel: string | null): string {
+  if (!APEXModel) return DEFAULT_CODEX_MODEL
+  if (isCodexModel(APEXModel)) return APEXModel
+  const lower = APEXModel.toLowerCase()
   if (lower.includes('opus')) return 'gpt-5.1-codex-max'
   if (lower.includes('haiku')) return 'gpt-5.1-codex-mini'
   if (lower.includes('sonnet')) return 'gpt-5.2-codex'
@@ -228,10 +228,10 @@ function translateToCodexBody(anthropicBody: Record<string, unknown>): {
     | string
     | Array<{ type: string; text?: string; cache_control?: unknown }>
     | undefined
-  const claudeModel = anthropicBody.model as string
+  const APEXModel = anthropicBody.model as string
   const anthropicTools = (anthropicBody.tools || []) as AnthropicTool[]
 
-  const codexModel = mapClaudeModelToCodex(claudeModel)
+  const codexModel = mapAPEXModelToCodex(APEXModel)
 
   // Build system instructions
   let instructions = ''

@@ -33,7 +33,7 @@ header() {
 
 ART
   printf "${RESET}"
-  printf "${DIM}  The free build of Claude Code${RESET}\n"
+  printf "${DIM}  The free build of APEX Code${RESET}\n"
   echo ""
 }
 
@@ -170,7 +170,7 @@ echo ""
 printf "  ${BOLD}Set your API key:${RESET}\n"
 printf "    ${CYAN}export ANTHROPIC_API_KEY=\"sk-ant-...\"${RESET}\n"
 echo ""
-printf "  ${BOLD}Or log in with Claude.ai:${RESET}\n"
+printf "  ${BOLD}Or log in with APEX.ai:${RESET}\n"
 printf "    ${CYAN}free-code /login${RESET}\n"
 echo ""
 printf "  ${DIM}Source: $INSTALL_DIR${RESET}\n"

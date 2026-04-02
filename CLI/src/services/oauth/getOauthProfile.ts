@@ -21,7 +21,7 @@ export async function getOauthProfileFromApiKey(): Promise<
   if (!accountUuid || !apiKey) {
     return
   }
-  const endpoint = `${getOauthConfig().BASE_API_URL}/api/claude_cli_profile`
+  const endpoint = `${getOauthConfig().BASE_API_URL}/api/APEX_cli_profile`
   try {
     const response = await axios.get<OAuthProfileResponse>(endpoint, {
       headers: {

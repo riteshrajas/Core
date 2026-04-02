@@ -1,4 +1,4 @@
-// OAuth client for handling authentication flows with Claude services
+// OAuth client for handling authentication flows with APEX services
 import axios from 'axios'
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -6,15 +6,15 @@ import {
 } from 'src/services/analytics/index.js'
 import {
   ALL_OAUTH_SCOPES,
-  CLAUDE_AI_INFERENCE_SCOPE,
-  CLAUDE_AI_OAUTH_SCOPES,
+  APEX_AI_INFERENCE_SCOPE,
+  APEX_AI_OAUTH_SCOPES,
   getOauthConfig,
 } from '../../constants/oauth.js'
 import {
   checkAndRefreshOAuthTokenIfNeeded,
-  getClaudeAIOAuthTokens,
+  getAPEXAIOAuthTokens,
   hasProfileScope,
-  isClaudeAISubscriber,
+  isAPEXAISubscriber,
   saveApiKey,
 } from '../../utils/auth.js'
 import type { AccountInfo } from '../../utils/config.js'
@@ -32,11 +32,11 @@ import type {
 } from './types.js'
 
 /**
- * Check if the user has Claude.ai authentication scope
+ * Check if the user has APEX.ai authentication scope
  * @private Only call this if you're OAuth / auth related code!
  */
-export function shouldUseClaudeAIAuth(scopes: string[] | undefined): boolean {
-  return Boolean(scopes?.includes(CLAUDE_AI_INFERENCE_SCOPE))
+export function shouldUseAPEXAIAuth(scopes: string[] | undefined): boolean {
+  return Boolean(scopes?.includes(APEX_AI_INFERENCE_SCOPE))
 }
 
 export function parseScopes(scopeString?: string): string[] {
@@ -76,7 +76,7 @@ export function buildAuthUrl({
   state,
   port,
   isManual,
-  loginWithClaudeAi,
+  loginWithAPEXAi,
   inferenceOnly,
   orgUUID,
   loginHint,
@@ -86,18 +86,18 @@ export function buildAuthUrl({
   state: string
   port: number
   isManual: boolean
-  loginWithClaudeAi?: boolean
+  loginWithAPEXAi?: boolean
   inferenceOnly?: boolean
   orgUUID?: string
   loginHint?: string
   loginMethod?: string
 }): string {
-  const authUrlBase = loginWithClaudeAi
-    ? getOauthConfig().CLAUDE_AI_AUTHORIZE_URL
+  const authUrlBase = loginWithAPEXAi
+    ? getOauthConfig().APEX_AI_AUTHORIZE_URL
     : getOauthConfig().CONSOLE_AUTHORIZE_URL
 
   const authUrl = new URL(authUrlBase)
-  authUrl.searchParams.append('code', 'true') // this tells the login page to show Claude Max upsell
+  authUrl.searchParams.append('code', 'true') // this tells the login page to show APEX Max upsell
   authUrl.searchParams.append('client_id', getOauthConfig().CLIENT_ID)
   authUrl.searchParams.append('response_type', 'code')
   authUrl.searchParams.append(
@@ -107,7 +107,7 @@ export function buildAuthUrl({
       : `http://localhost:${port}/callback`,
   )
   const scopesToUse = inferenceOnly
-    ? [CLAUDE_AI_INFERENCE_SCOPE] // Long-lived inference-only tokens
+    ? [APEX_AI_INFERENCE_SCOPE] // Long-lived inference-only tokens
     : ALL_OAUTH_SCOPES
   authUrl.searchParams.append('scope', scopesToUse.join(' '))
   authUrl.searchParams.append('code_challenge', codeChallenge)
@@ -179,14 +179,14 @@ export async function refreshOAuthToken(
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
     client_id: getOauthConfig().CLIENT_ID,
-    // Request specific scopes, defaulting to the full Claude AI set. The
+    // Request specific scopes, defaulting to the full APEX AI set. The
     // backend's refresh-token grant allows scope expansion beyond what the
     // initial authorize granted (see ALLOWED_SCOPE_EXPANSIONS), so this is
     // safe even for tokens issued before scopes were added to the app's
     // registered oauth_scope.
     scope: (requestedScopes?.length
       ? requestedScopes
-      : CLAUDE_AI_OAUTH_SCOPES
+      : APEX_AI_OAUTH_SCOPES
     ).join(' '),
   }
 
@@ -217,7 +217,7 @@ export async function refreshOAuthToken(
     // Routine refreshes satisfy both, so we cut ~7M req/day fleet-wide.
     //
     // Checking secure storage (not just config) matters for the
-    // CLAUDE_CODE_OAUTH_REFRESH_TOKEN re-login path: installOAuthTokens runs
+    // APEX_CODE_OAUTH_REFRESH_TOKEN re-login path: installOAuthTokens runs
     // performLogout() AFTER we return, wiping secure storage. If we returned
     // null for subscriptionType here, saveOAuthTokensIfNeeded would persist
     // null ?? (wiped) ?? null = null, and every future refresh would see the
@@ -226,7 +226,7 @@ export async function refreshOAuthToken(
     // the re-login path writes cached ?? wiped ?? null = cached; and if secure
     // storage was already empty we fall through to the fetch.
     const config = getGlobalConfig()
-    const existing = getClaudeAIOAuthTokens()
+    const existing = getAPEXAIOAuthTokens()
     const haveProfileAlready =
       config.oauthAccount?.billingType !== undefined &&
       config.oauthAccount?.accountCreatedAt !== undefined &&
@@ -396,16 +396,16 @@ export async function fetchProfileInfo(accessToken: string): Promise<{
   // Reuse the logic from fetchSubscriptionType
   let subscriptionType: SubscriptionType | null = null
   switch (orgType) {
-    case 'claude_max':
+    case 'APEX_max':
       subscriptionType = 'max'
       break
-    case 'claude_pro':
+    case 'APEX_pro':
       subscriptionType = 'pro'
       break
-    case 'claude_enterprise':
+    case 'APEX_enterprise':
       subscriptionType = 'enterprise'
       break
-    case 'claude_team':
+    case 'APEX_team':
       subscriptionType = 'team'
       break
     default:
@@ -460,7 +460,7 @@ export async function getOrganizationUUID(): Promise<string | null> {
   }
 
   // Fall back to fetching from profile (requires user:profile scope)
-  const accessToken = getClaudeAIOAuthTokens()?.accessToken
+  const accessToken = getAPEXAIOAuthTokens()?.accessToken
   if (accessToken === undefined || !hasProfileScope()) {
     return null
   }
@@ -482,9 +482,9 @@ export async function populateOAuthAccountInfoIfNeeded(): Promise<boolean> {
   // eliminates the race condition where early telemetry events lack account info.
   // NB: If/when adding additional SDK-relevant functionality requiring _other_ OAuth account properties,
   // please reach out to #proj-cowork so the team can add additional env var fallbacks.
-  const envAccountUuid = process.env.CLAUDE_CODE_ACCOUNT_UUID
-  const envUserEmail = process.env.CLAUDE_CODE_USER_EMAIL
-  const envOrganizationUuid = process.env.CLAUDE_CODE_ORGANIZATION_UUID
+  const envAccountUuid = process.env.APEX_CODE_ACCOUNT_UUID
+  const envUserEmail = process.env.APEX_CODE_USER_EMAIL
+  const envOrganizationUuid = process.env.APEX_CODE_ORGANIZATION_UUID
   const hasEnvVars = Boolean(
     envAccountUuid && envUserEmail && envOrganizationUuid,
   )
@@ -508,13 +508,13 @@ export async function populateOAuthAccountInfoIfNeeded(): Promise<boolean> {
       config.oauthAccount.billingType !== undefined &&
       config.oauthAccount.accountCreatedAt !== undefined &&
       config.oauthAccount.subscriptionCreatedAt !== undefined) ||
-    !isClaudeAISubscriber() ||
+    !isAPEXAISubscriber() ||
     !hasProfileScope()
   ) {
     return false
   }
 
-  const tokens = getClaudeAIOAuthTokens()
+  const tokens = getAPEXAIOAuthTokens()
   if (tokens?.accessToken) {
     const profile = await getOauthProfileFromOauthToken(tokens.accessToken)
     if (profile) {

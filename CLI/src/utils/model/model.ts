@@ -8,7 +8,7 @@
 import { getMainLoopModelOverride } from '../../bootstrap/state.js'
 import {
   getSubscriptionType,
-  isClaudeAISubscriber,
+  isAPEXAISubscriber,
   isCodexSubscriber,
   isMaxSubscriber,
   isProSubscriber,
@@ -217,56 +217,56 @@ export function getDefaultMainLoopModel(): ModelName {
 // @[MODEL LAUNCH]: Add a canonical name mapping for the new model below.
 /**
  * Pure string-match that strips date/provider suffixes from a first-party model
- * name. Input must already be a 1P-format ID (e.g. 'claude-3-7-sonnet-20250219',
- * 'us.anthropic.claude-opus-4-6-v1:0'). Does not touch settings, so safe at
+ * name. Input must already be a 1P-format ID (e.g. 'APEX-3-7-sonnet-20250219',
+ * 'us.anthropic.APEX-opus-4-6-v1:0'). Does not touch settings, so safe at
  * module top-level (see MODEL_COSTS in modelCost.ts).
  */
 export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
   name = name.toLowerCase()
-  // Special cases for Claude 4+ models to differentiate versions
+  // Special cases for APEX 4+ models to differentiate versions
   // Order matters: check more specific versions first (4-5 before 4)
-  if (name.includes('claude-opus-4-6')) {
-    return 'claude-opus-4-6'
+  if (name.includes('APEX-opus-4-6')) {
+    return 'APEX-opus-4-6'
   }
-  if (name.includes('claude-opus-4-5')) {
-    return 'claude-opus-4-5'
+  if (name.includes('APEX-opus-4-5')) {
+    return 'APEX-opus-4-5'
   }
-  if (name.includes('claude-opus-4-1')) {
-    return 'claude-opus-4-1'
+  if (name.includes('APEX-opus-4-1')) {
+    return 'APEX-opus-4-1'
   }
-  if (name.includes('claude-opus-4')) {
-    return 'claude-opus-4'
+  if (name.includes('APEX-opus-4')) {
+    return 'APEX-opus-4'
   }
-  if (name.includes('claude-sonnet-4-6')) {
-    return 'claude-sonnet-4-6'
+  if (name.includes('APEX-sonnet-4-6')) {
+    return 'APEX-sonnet-4-6'
   }
-  if (name.includes('claude-sonnet-4-5')) {
-    return 'claude-sonnet-4-5'
+  if (name.includes('APEX-sonnet-4-5')) {
+    return 'APEX-sonnet-4-5'
   }
-  if (name.includes('claude-sonnet-4')) {
-    return 'claude-sonnet-4'
+  if (name.includes('APEX-sonnet-4')) {
+    return 'APEX-sonnet-4'
   }
-  if (name.includes('claude-haiku-4-5')) {
-    return 'claude-haiku-4-5'
+  if (name.includes('APEX-haiku-4-5')) {
+    return 'APEX-haiku-4-5'
   }
-  // Claude 3.x models use a different naming scheme (claude-3-{family})
-  if (name.includes('claude-3-7-sonnet')) {
-    return 'claude-3-7-sonnet'
+  // APEX 3.x models use a different naming scheme (APEX-3-{family})
+  if (name.includes('APEX-3-7-sonnet')) {
+    return 'APEX-3-7-sonnet'
   }
-  if (name.includes('claude-3-5-sonnet')) {
-    return 'claude-3-5-sonnet'
+  if (name.includes('APEX-3-5-sonnet')) {
+    return 'APEX-3-5-sonnet'
   }
-  if (name.includes('claude-3-5-haiku')) {
-    return 'claude-3-5-haiku'
+  if (name.includes('APEX-3-5-haiku')) {
+    return 'APEX-3-5-haiku'
   }
-  if (name.includes('claude-3-opus')) {
-    return 'claude-3-opus'
+  if (name.includes('APEX-3-opus')) {
+    return 'APEX-3-opus'
   }
-  if (name.includes('claude-3-sonnet')) {
-    return 'claude-3-sonnet'
+  if (name.includes('APEX-3-sonnet')) {
+    return 'APEX-3-sonnet'
   }
-  if (name.includes('claude-3-haiku')) {
-    return 'claude-3-haiku'
+  if (name.includes('APEX-3-haiku')) {
+    return 'APEX-3-haiku'
   }
   // OpenAI GPT models
   if (name.includes('gpt-5.4-mini')) {
@@ -278,7 +278,7 @@ export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
   if (name.includes('gpt-5.3-codex')) {
     return 'gpt-5.3-codex'
   }
-  const match = name.match(/(claude-(\d+-\d+-)?\w+)/)
+  const match = name.match(/(APEX-(\d+-\d+-)?\w+)/)
   if (match && match[1]) {
     return match[1]
   }
@@ -288,10 +288,10 @@ export function firstPartyNameToCanonical(name: ModelName): ModelShortName {
 
 /**
  * Maps a full model string to a shorter canonical version that's unified across 1P and 3P providers.
- * For example, 'claude-3-5-haiku-20241022' and 'us.anthropic.claude-3-5-haiku-20241022-v1:0'
- * would both be mapped to 'claude-3-5-haiku'.
- * @param fullModelName The full model name (e.g., 'claude-3-5-haiku-20241022')
- * @returns The short name (e.g., 'claude-3-5-haiku') if found, or the original name if no mapping exists
+ * For example, 'APEX-3-5-haiku-20241022' and 'us.anthropic.APEX-3-5-haiku-20241022-v1:0'
+ * would both be mapped to 'APEX-3-5-haiku'.
+ * @param fullModelName The full model name (e.g., 'APEX-3-5-haiku-20241022')
+ * @returns The short name (e.g., 'APEX-3-5-haiku') if found, or the original name if no mapping exists
  */
 export function getCanonicalName(fullModelName: ModelName): ModelShortName {
   // Resolve overridden model IDs (e.g. Bedrock ARNs) back to canonical names.
@@ -300,7 +300,7 @@ export function getCanonicalName(fullModelName: ModelName): ModelShortName {
 }
 
 // @[MODEL LAUNCH]: Update the default model description strings shown to users.
-export function getClaudeAiUserDefaultModelDescription(
+export function getAPEXAiUserDefaultModelDescription(
   fastMode = false,
 ): string {
   if (isCodexSubscriber()) {
@@ -345,7 +345,7 @@ export function isOpus1mMergeEnabled(): boolean {
   // isProSubscriber() returns false for such users and the merge leaks
   // opus[1m] into the model dropdown — the API then rejects it with a
   // misleading "rate limit reached" error.
-  if (isClaudeAISubscriber() && getSubscriptionType() === null) {
+  if (isAPEXAISubscriber() && getSubscriptionType() === null) {
     return false
   }
   return true
@@ -452,11 +452,11 @@ export function renderModelName(model: ModelName): string {
 
 /**
  * Returns a safe author name for public display (e.g., in git commit trailers).
- * Returns "Claude {ModelName}" for publicly known models, or "Claude ({model})"
+ * Returns "APEX {ModelName}" for publicly known models, or "APEX ({model})"
  * for unknown/internal models so the exact model name is preserved.
  *
  * @param model The full model name
- * @returns "Claude {ModelName}" for public models, or "Claude ({model})" for non-public models
+ * @returns "APEX {ModelName}" for public models, or "APEX ({model})" for non-public models
  */
 export function getPublicModelName(model: ModelName): string {
   const publicName = getPublicModelDisplayName(model)
@@ -464,9 +464,9 @@ export function getPublicModelName(model: ModelName): string {
     if (model.includes('gpt-') || model.includes('codex')) {
       return publicName
     }
-    return `Claude ${publicName}`
+    return `APEX ${publicName}`
   }
-  return `Claude (${model})`
+  return `APEX (${model})`
 }
 
 /**
@@ -509,7 +509,7 @@ export function parseUserSpecifiedModel(
   }
 
   // Opus 4/4.1 are no longer available on the first-party API (same as
-  // Claude.ai) — silently remap to the current Opus default. The 'opus'
+  // APEX.ai) — silently remap to the current Opus default. The 'opus'
   // alias already resolves to 4.6, so the only users on these explicit
   // strings pinned them in settings/env/--model/SDK before 4.5 launched.
   // 3P providers may not yet have 4.6 capacity, so pass through unchanged.
@@ -566,7 +566,7 @@ export function resolveSkillModelOverride(
   if (has1mContext(skillModel) || !has1mContext(currentModel)) {
     return skillModel
   }
-  // modelSupports1M matches on canonical IDs ('claude-opus-4-6', 'claude-sonnet-4');
+  // modelSupports1M matches on canonical IDs ('APEX-opus-4-6', 'APEX-sonnet-4');
   // a bare 'opus' alias falls through getCanonicalName unmatched. Resolve first.
   if (modelSupports1M(parseUserSpecifiedModel(skillModel))) {
     return skillModel + '[1m]'
@@ -575,10 +575,10 @@ export function resolveSkillModelOverride(
 }
 
 const LEGACY_OPUS_FIRSTPARTY = [
-  'claude-opus-4-20250514',
-  'claude-opus-4-1-20250805',
-  'claude-opus-4-0',
-  'claude-opus-4-1',
+  'APEX-opus-4-20250514',
+  'APEX-opus-4-1-20250805',
+  'APEX-opus-4-0',
+  'APEX-opus-4-1',
 ]
 
 function isLegacyOpusFirstParty(model: string): boolean {
@@ -589,15 +589,15 @@ function isLegacyOpusFirstParty(model: string): boolean {
  * Opt-out for the legacy Opus 4.0/4.1 → current Opus remap.
  */
 export function isLegacyModelRemapEnabled(): boolean {
-  return !isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_LEGACY_MODEL_REMAP)
+  return !isEnvTruthy(process.env.APEX_CODE_DISABLE_LEGACY_MODEL_REMAP)
 }
 
 export function modelDisplayString(model: ModelSetting): string {
   if (model === null) {
     if (process.env.USER_TYPE === 'ant') {
       return `Default for Ants (${renderDefaultModelSetting(getDefaultMainLoopModelSetting())})`
-    } else if (isClaudeAISubscriber()) {
-      return `Default (${getClaudeAiUserDefaultModelDescription()})`
+    } else if (isAPEXAISubscriber()) {
+      return `Default (${getAPEXAiUserDefaultModelDescription()})`
     }
     return `Default (${getDefaultMainLoopModel()})`
   }
@@ -615,38 +615,38 @@ export function getMarketingNameForModel(modelId: string): string | undefined {
   const has1m = modelId.toLowerCase().includes('[1m]')
   const canonical = getCanonicalName(modelId)
 
-  if (canonical.includes('claude-opus-4-6')) {
+  if (canonical.includes('APEX-opus-4-6')) {
     return has1m ? 'Opus 4.6 (with 1M context)' : 'Opus 4.6'
   }
-  if (canonical.includes('claude-opus-4-5')) {
+  if (canonical.includes('APEX-opus-4-5')) {
     return 'Opus 4.5'
   }
-  if (canonical.includes('claude-opus-4-1')) {
+  if (canonical.includes('APEX-opus-4-1')) {
     return 'Opus 4.1'
   }
-  if (canonical.includes('claude-opus-4')) {
+  if (canonical.includes('APEX-opus-4')) {
     return 'Opus 4'
   }
-  if (canonical.includes('claude-sonnet-4-6')) {
+  if (canonical.includes('APEX-sonnet-4-6')) {
     return has1m ? 'Sonnet 4.6 (with 1M context)' : 'Sonnet 4.6'
   }
-  if (canonical.includes('claude-sonnet-4-5')) {
+  if (canonical.includes('APEX-sonnet-4-5')) {
     return has1m ? 'Sonnet 4.5 (with 1M context)' : 'Sonnet 4.5'
   }
-  if (canonical.includes('claude-sonnet-4')) {
+  if (canonical.includes('APEX-sonnet-4')) {
     return has1m ? 'Sonnet 4 (with 1M context)' : 'Sonnet 4'
   }
-  if (canonical.includes('claude-3-7-sonnet')) {
-    return 'Claude 3.7 Sonnet'
+  if (canonical.includes('APEX-3-7-sonnet')) {
+    return 'APEX 3.7 Sonnet'
   }
-  if (canonical.includes('claude-3-5-sonnet')) {
-    return 'Claude 3.5 Sonnet'
+  if (canonical.includes('APEX-3-5-sonnet')) {
+    return 'APEX 3.5 Sonnet'
   }
-  if (canonical.includes('claude-haiku-4-5')) {
+  if (canonical.includes('APEX-haiku-4-5')) {
     return 'Haiku 4.5'
   }
-  if (canonical.includes('claude-3-5-haiku')) {
-    return 'Claude 3.5 Haiku'
+  if (canonical.includes('APEX-3-5-haiku')) {
+    return 'APEX 3.5 Haiku'
   }
   // OpenAI Codex models
   if (canonical.includes('gpt-5.4-mini')) {

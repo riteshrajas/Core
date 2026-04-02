@@ -10,7 +10,7 @@ external-build defines and externals. Result:
 - 34 flags still fail to bundle
 
 Important: "bundle cleanly" does not always mean "runtime-safe". Some flags
-still depend on optional native modules, claude.ai OAuth, GrowthBook gates, or
+still depend on optional native modules, APEX.ai OAuth, GrowthBook gates, or
 externalized `@ant/*` packages.
 
 ## Build Variants
@@ -32,7 +32,7 @@ externalized `@ant/*` packages.
 - `VOICE_MODE`
   This is now included in the default build pipeline, not just the dev build.
   It enables `/voice`, push-to-talk UI, voice notices, and dictation plumbing.
-  Runtime still depends on claude.ai OAuth plus either the native audio module
+  Runtime still depends on APEX.ai OAuth plus either the native audio module
   or a fallback recorder such as SoX.
 
 ## Working Experimental Features
@@ -172,14 +172,14 @@ These bundle today, but I would still treat them as experimental because they
 have meaningful runtime caveats:
 
 - `VOICE_MODE`
-  Bundles cleanly, but requires claude.ai OAuth and a local recording backend.
+  Bundles cleanly, but requires APEX.ai OAuth and a local recording backend.
   The native audio module is optional now; on this machine the fallback path
   asks for `brew install sox`.
 - `NATIVE_CLIPBOARD_IMAGE`
   Bundles cleanly, but only accelerates macOS clipboard reads when
   `image-processor-napi` is present.
 - `BRIDGE_MODE`, `CCR_AUTO_CONNECT`, `CCR_MIRROR`, `CCR_REMOTE_SETUP`
-  Bundle cleanly, but are gated at runtime on claude.ai OAuth plus GrowthBook
+  Bundle cleanly, but are gated at runtime on APEX.ai OAuth plus GrowthBook
   entitlement checks.
 - `KAIROS_BRIEF`, `KAIROS_CHANNELS`
   Bundle cleanly, but they do not restore the full missing assistant stack.
@@ -208,8 +208,8 @@ entire subsystem.
 - `BUDDY`
   Fails on missing `src/commands/buddy/index.js`. The buddy UI components and
   prompt-input hooks already exist.
-- `BUILDING_CLAUDE_APPS`
-  Fails on missing `src/claude-api/csharp/claude-api.md`. This looks like an
+- `BUILDING_APEX_APPS`
+  Fails on missing `src/APEX-api/csharp/APEX-api.md`. This looks like an
   asset/document gap, not a missing runtime subsystem.
 - `COMMIT_ATTRIBUTION`
   Fails on missing `src/utils/attributionHooks.js`. Setup and cache-clear code
@@ -304,14 +304,14 @@ missing import is only the visible edge of a broader absent subsystem.
 ## Useful Entry Points
 
 - Feature-aware build logic:
-  [scripts/build.ts](/Users/paolo/Repos/claude-code/scripts/build.ts)
+  [scripts/build.ts](/Users/paolo/Repos/APEX-code/scripts/build.ts)
 - Feature-gated command imports:
-  [src/commands.ts](/Users/paolo/Repos/claude-code/src/commands.ts)
+  [src/commands.ts](/Users/paolo/Repos/APEX-code/src/commands.ts)
 - Feature-gated tool imports:
-  [src/tools.ts](/Users/paolo/Repos/claude-code/src/tools.ts)
+  [src/tools.ts](/Users/paolo/Repos/APEX-code/src/tools.ts)
 - Feature-gated task imports:
-  [src/tasks.ts](/Users/paolo/Repos/claude-code/src/tasks.ts)
+  [src/tasks.ts](/Users/paolo/Repos/APEX-code/src/tasks.ts)
 - Feature-gated query behavior:
-  [src/query.ts](/Users/paolo/Repos/claude-code/src/query.ts)
+  [src/query.ts](/Users/paolo/Repos/APEX-code/src/query.ts)
 - Feature-gated CLI entry paths:
-  [src/entrypoints/cli.tsx](/Users/paolo/Repos/claude-code/src/entrypoints/cli.tsx)
+  [src/entrypoints/cli.tsx](/Users/paolo/Repos/APEX-code/src/entrypoints/cli.tsx)

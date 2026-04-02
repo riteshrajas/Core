@@ -134,16 +134,16 @@ const externals = [
 
 const defines = {
   'process.env.USER_TYPE': JSON.stringify('external'),
-  'process.env.CLAUDE_CODE_FORCE_FULL_LOGO': JSON.stringify('true'),
+  'process.env.APEX_CODE_FORCE_FULL_LOGO': JSON.stringify('true'),
   ...(dev
     ? { 'process.env.NODE_ENV': JSON.stringify('development') }
     : {}),
   ...(dev
     ? {
-        'process.env.CLAUDE_CODE_EXPERIMENTAL_BUILD': JSON.stringify('true'),
+        'process.env.APEX_CODE_EXPERIMENTAL_BUILD': JSON.stringify('true'),
       }
     : {}),
-  'process.env.CLAUDE_CODE_VERIFY_PLAN': JSON.stringify('false'),
+  'process.env.APEX_CODE_VERIFY_PLAN': JSON.stringify('false'),
   'process.env.CCR_FORCE_BUNDLE': JSON.stringify('true'),
   'MACRO.VERSION': JSON.stringify(version),
   'MACRO.BUILD_TIME': JSON.stringify(buildTime),
@@ -154,7 +154,7 @@ const defines = {
     'This reconstructed source snapshot does not include Anthropic internal issue routing.',
   ),
   'MACRO.VERSION_CHANGELOG': JSON.stringify(
-    dev ? getVersionChangelog() : 'https://github.com/paoloanzn/claude-code',
+    dev ? getVersionChangelog() : 'https://github.com/paoloanzn/APEX-code',
   ),
 } as const
 

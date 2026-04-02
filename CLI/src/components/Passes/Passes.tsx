@@ -71,7 +71,7 @@ export function Passes({
         setReferrerReward(eligibilityData.referrer_reward);
 
         // Use the campaign returned from eligibility for redemptions
-        const campaign = eligibilityData.referral_code_details?.campaign ?? 'claude_code_guest_pass';
+        const campaign = eligibilityData.referral_code_details?.campaign ?? 'APEX_code_guest_pass';
 
         // Fetch redemptions data
         let redemptionsData: ReferralRedemptionsResponse;
@@ -146,7 +146,7 @@ export function Passes({
         <Text>{'┌──────────┐'}</Text>
         <Text>
           {' ) CC '}
-          <Text color="claude">{TEARDROP_ASTERISK}</Text>
+          <Text color="APEX">{TEARDROP_ASTERISK}</Text>
           {' ┊ ( '}
         </Text>
         <Text>{'└──────────┘'}</Text>
@@ -166,8 +166,8 @@ export function Passes({
 
         <Box flexDirection="column" marginLeft={2}>
           <Text dimColor>
-            {referrerReward ? `Share a free week of Claude Code with friends. If they love it and subscribe, you'll get ${formatCreditAmount(referrerReward)} of extra usage to keep building. ` : 'Share a free week of Claude Code with friends. '}
-            <Link url={referrerReward ? 'https://support.claude.com/en/articles/13456702-claude-code-guest-passes' : 'https://support.claude.com/en/articles/12875061-claude-code-guest-passes'}>
+            {referrerReward ? `Share a free week of APEX Code with friends. If they love it and subscribe, you'll get ${formatCreditAmount(referrerReward)} of extra usage to keep building. ` : 'Share a free week of APEX Code with friends. '}
+            <Link url={referrerReward ? 'https://support.APEX.com/en/articles/13456702-APEX-code-guest-passes' : 'https://support.APEX.com/en/articles/12875061-APEX-code-guest-passes'}>
               Terms apply.
             </Link>
           </Text>

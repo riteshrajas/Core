@@ -1,6 +1,6 @@
 /**
- * OpenAI Codex API adapter for Claude Code
- * Provides compatibility layer between Claude's API expectations and OpenAI's Codex API
+ * OpenAI Codex API adapter for APEX Code
+ * Provides compatibility layer between APEX's API expectations and OpenAI's Codex API
  */
 
 import type { Message } from '../types/message.js'
@@ -44,7 +44,7 @@ interface OpenAIResponse {
 }
 
 /**
- * Convert Claude Code message format to OpenAI format
+ * Convert APEX Code message format to OpenAI format
  */
 function convertToOpenAIMessage(message: Message): OpenAIMessage {
   if (typeof message.content === 'string') {
@@ -133,7 +133,7 @@ export async function fetchCodexResponse(
 }
 
 /**
- * Convert OpenAI response to Claude Code format
+ * Convert OpenAI response to APEX Code format
  */
 export function convertFromOpenAIResponse(response: OpenAIResponse): {
   content: string

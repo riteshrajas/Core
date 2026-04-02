@@ -33,7 +33,7 @@ export class MultiProviderClient {
       openAiBaseUrl: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
       openAiDefaultModel: process.env.OPENAI_MODEL || "gpt-4o-mini",
       anthropicBaseUrl: process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com/v1",
-      anthropicDefaultModel: process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest",
+      anthropicDefaultModel: process.env.ANTHROPIC_MODEL || "APEX-3-5-sonnet-latest",
       anthropicMaxTokens: parsePositiveInteger(process.env.ANTHROPIC_MAX_TOKENS, 1024),
       defaultProvider: parseProviderName(process.env.DEFAULT_AI_PROVIDER) || "ollama",
       defaultTemperature: parseOptionalNumber(process.env.DEFAULT_AI_TEMPERATURE),

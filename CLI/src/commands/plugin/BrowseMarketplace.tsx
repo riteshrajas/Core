@@ -150,10 +150,10 @@ export function BrowseMarketplace({
           }
         }
 
-        // Sort so claude-plugin-directory is always first
+        // Sort so APEX-plugin-directory is always first
         marketplaceInfos.sort((a, b) => {
-          if (a.name === 'claude-plugin-directory') return -1;
-          if (b.name === 'claude-plugin-directory') return 1;
+          if (a.name === 'APEX-plugin-directory') return -1;
+          if (b.name === 'APEX-plugin-directory') return 1;
           return 0;
         });
         setMarketplaces(marketplaceInfos);
