@@ -1,0 +1,41 @@
+{
+  "likes": [
+    "Complex technical troubleshooting and formula derivations",
+    "3D coordinate transformations and visualizations",
+    "AI-driven development (Warp terminal, GitHub integration)",
+    "Robotics competitions and hardware sourcing",
+    "Tamil movies (Ayalaan, Enthiran, Maanaadu) and Sci-Fi (Interstellar)",
+    "Chicken pizza",
+    "Word games (Wordle, Connections, Match)",
+    "Structured, actionable information (Markdown, bullet points)",
+    "Low-level hardware communication (LoRa)"
+  ],
+  "dislikes": [
+    "Microsoft ecosystem (despite liking TypeScript)",
+    "Technical inaccuracies or mathematical errors in AI responses",
+    "Unresponsive software features",
+    "Generic summaries without technical depth",
+    "Dependency conflicts and locked-in cloud platforms",
+    "Inefficient or overly complex workflows"
+  ],
+  "hobbies": [
+    "Building custom electronics and macro pads",
+    "Mentoring FLL and FRC students",
+    "Linguistic research (Tamil, Hindi, Telugu)",
+    "Video editing and multimedia content creation (DaVinci Resolve)",
+    "Drone flying and programming (Tello)",
+    "Watching Tamil and sci-fi movies",
+    "Online tutoring in Math, Physics, and Programming"
+  ],
+  "routines": [
+    "Managing programming workshops and club subgroup tasks",
+    "Documenting engineering progress in design notebooks",
+    "Strict management of environmental lighting (All lights on or off)",
+    "Juggling dual-enrollment, AP classes, and leadership roles"
+  ],
+  "communicationStyle": {
+    "tone": "Technical, professional, precise, and occasionally poetic with rhetorical flair",
+    "formatting": "Highly organized hierarchies, clear headers, diagrams, and code blocks",
+    "aiResponsePreferences": "Wants factual accuracy combined with rhetorical devices and parallelism; prefers architectural advice, code reviews, and formula derivations over generic overviews."
+  }
+}

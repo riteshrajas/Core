@@ -1,0 +1,73 @@
+{
+  "languages": [
+    "Java (FRC/WPILib focus)",
+    "Python (AI/ML/Vision/Scripting)",
+    "C++",
+    "Dart (Flutter)",
+    "Rust",
+    "Go",
+    "TypeScript/JavaScript",
+    "SQL",
+    "Google Apps Script",
+    "CircuitPython",
+    "Tamil",
+    "Hindi",
+    "Telugu"
+  ],
+  "frameworks": [
+    "WPILib",
+    "AdvantageKit",
+    "ROS (Robot Operating System)",
+    "Flutter",
+    "TensorFlow",
+    "PyTorch",
+    "Keras",
+    "OpenCV",
+    "MediaPipe",
+    "FastAPI",
+    "CTRE Phoenix",
+    "LimelightHelpers",
+    "ThriftyLib",
+    "Motion Magic",
+    "PID Control"
+  ],
+  "tools": [
+    "GitHub (50+ repositories)",
+    "Docker",
+    "n8n",
+    "Grafana",
+    "Supabase",
+    "PocketBase",
+    "Appwrite",
+    "Vultr",
+    "Linode",
+    "Warp AI Terminal",
+    "DaVinci Resolve",
+    "Kdenlive",
+    "Blender (VSE)",
+    "AdvantageScope",
+    "Shuffleboard",
+    "Glass",
+    "PathWeaver",
+    "SysId",
+    "Cloudflare Tunnel",
+    "ngrok",
+    "Portainer",
+    "JetBrains IDEs"
+  ],
+  "codingStyle": "Focuses on architecture-centric, collaborative development of complex agentic AI systems and hardware-software integration. Emphasizes documentation, open-source standards, and macro-driven workflow automation.",
+  "strengths": [
+    "System architecture for AI applications",
+    "Technical leadership and robotics mentorship",
+    "Mathematical modeling (Trigonometry/3D transformations)",
+    "Full-stack app development (Flutter + Backend-as-a-Service)",
+    "Rapid prototyping for hackathons",
+    "Embedded systems and IoT integration (Arduino, ESP32, LoRa)"
+  ],
+  "areasOfImprovement": [
+    "Advanced Data Structures",
+    "Cloud Infrastructure management at scale",
+    "Advanced foundational mathematics (Pre-calculus)",
+    "AP Physics C mastery"
+  ]
+}

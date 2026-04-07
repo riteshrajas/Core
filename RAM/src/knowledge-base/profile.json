@@ -1,0 +1,40 @@
+{
+  "coreIdentity": {
+    "name": "Ritesh Raj Arul Selvan",
+    "age": 18,
+    "birthday": "March 24",
+    "location": "Rochester Hills, Michigan",
+    "profession": "Computer Programmer and High School Student (Senior as of Fall 2026)",
+    "background": "Indian student in the U.S. on an L2 dependent visa; dual-enrolled at Oakland Community College (OCC) focusing on cloud infrastructure and data structures; 3.8 GPA at Rochester High School; National Honor Society (NHS) member.",
+    "keyLifeEvents": [
+      "Technical Co-Captaincy and Programming Lead of FRC Team 201 (FEDS)",
+      "Founded high school Computer Science and Engineering clubs",
+      "Dean's List Award (FRC)",
+      "Built 'Apex' (AI operating ecosystem) for Red Bull Basement 2026",
+      "Developed 'Scout Ops' mobile app published to Amazon Appstore",
+      "GrizzHacks 8 hackathon AI/ML track participant",
+      "Led robotics team to national competition in 2023",
+      "Scheduled driving skills test (December 2025)"
+    ]
+  },
+  "recurringThemes": [
+    "Robotics engineering and competition (FRC/FLL)",
+    "Agentic AI systems and machine learning integration",
+    "Educational mentorship and tutoring",
+    "Embedded systems and workflow automation",
+    "Aerospace engineering aspirations (NASA, UMich)",
+    "Technical precision and rigorous correction",
+    "Student leadership and community building",
+    "Integration of linguistic heritage (Tamil, Hindi, Telugu) with modern technology"
+  ],
+  "importantRelationships": [
+    "Mrs. Gupta (Robotics Mentor/Teacher)",
+    "Ms. Mazure (College Fair Advisor)",
+    "Clifford (Cliff) - friend and collaborator",
+    "David (Dalvd) - friend and collaborator",
+    "Ikshita - collaborator",
+    "Sachth - collaborator",
+    "Sathita (Mother)",
+    "Younger brother"
+  ]
+}
