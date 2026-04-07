@@ -18,6 +18,7 @@
  * 6. Worker polls mailbox for responses and continues execution
  */
 
+import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, readFile, unlink, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { z } from 'zod/v4'
@@ -158,7 +159,7 @@ function getResolvedRequestPath(teamName: string, requestId: string): string {
  * Generate a unique request ID
  */
 export function generateRequestId(): string {
-  return `perm-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  return `perm-${randomUUID()}`
 }
 
 /**
@@ -790,7 +791,7 @@ export async function sendPermissionResponseViaMailbox(
  * Generate a unique sandbox permission request ID
  */
 export function generateSandboxRequestId(): string {
-  return `sandbox-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+  return `sandbox-${randomUUID()}`
 }
 
 /**
