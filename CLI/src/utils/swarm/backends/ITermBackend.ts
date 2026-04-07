@@ -73,6 +73,24 @@ function getLeaderSessionId(): string | null {
 }
 
 /**
+ * RGB values for agent colors, used for iTerm2 tab coloring.
+ * These match the colors used in the dark theme.
+ */
+const AGENT_COLOR_RGB: Record<
+  AgentColorName,
+  { r: number; g: number; b: number }
+> = {
+  red: { r: 220, g: 38, b: 38 },
+  blue: { r: 37, g: 99, b: 235 },
+  green: { r: 22, g: 163, b: 74 },
+  yellow: { r: 202, g: 138, b: 4 },
+  purple: { r: 147, g: 51, b: 234 },
+  orange: { r: 234, g: 88, b: 12 },
+  pink: { r: 219, g: 39, b: 119 },
+  cyan: { r: 8, g: 145, b: 178 },
+}
+
+/**
  * ITermBackend implements pane management using iTerm2's native split panes
  * via the it2 CLI tool.
  */
@@ -227,10 +245,9 @@ export class ITermBackend implements PaneBackend {
 
         teammateSessionIds.push(paneId)
 
-        // Set pane color and title
-        // Skip color and title for now - each it2 call is slow (Python process + API)
-        // The pane is functional without these cosmetic features
-        // TODO: Consider batching these or making them async/fire-and-forget
+        // Set pane color and title asynchronously (fire-and-forget) to avoid slowing down execution.
+        // This is safe because the pane is functional even if styling takes a moment to apply.
+        this.applyPaneStyling(paneId, name, color)
 
         return { paneId, isFirstTeammate }
       }
@@ -264,28 +281,90 @@ export class ITermBackend implements PaneBackend {
   }
 
   /**
-   * No-op for iTerm2 - tab colors would require escape sequences but we skip
-   * them for performance (each it2 call is slow).
+   * Sets the tab color for a specific iTerm2 pane.
+   * Runs as fire-and-forget to avoid slowing down execution.
    */
   async setPaneBorderColor(
-    _paneId: PaneId,
-    _color: AgentColorName,
+    paneId: PaneId,
+    color: AgentColorName,
     _useExternalSession?: boolean,
   ): Promise<void> {
-    // Skip for performance - each it2 call spawns a Python process
+    const rgb = AGENT_COLOR_RGB[color]
+    const colorSeq = `\\033]6;1;bg;red;brightness;${rgb.r};green;brightness;${rgb.g};blue;brightness;${rgb.b}\\a`
+    void this.runIt2Quietly([
+      'session',
+      'run',
+      '-s',
+      paneId,
+      `printf "${colorSeq}"`,
+    ])
   }
 
   /**
-   * No-op for iTerm2 - titles would require escape sequences but we skip
-   * them for performance (each it2 call is slow).
+   * Sets the title for a specific iTerm2 pane.
+   * Runs as fire-and-forget to avoid slowing down execution.
    */
   async setPaneTitle(
-    _paneId: PaneId,
-    _name: string,
+    paneId: PaneId,
+    name: string,
     _color: AgentColorName,
     _useExternalSession?: boolean,
   ): Promise<void> {
-    // Skip for performance - each it2 call spawns a Python process
+    // Escape name for shell injection safety (double quotes)
+    const escapedName = name.replace(/"/g, '\\"')
+    const titleSeq = `\\033]2;${escapedName}\\a`
+    void this.runIt2Quietly([
+      'session',
+      'run',
+      '-s',
+      paneId,
+      `printf "${titleSeq}"`,
+    ])
+  }
+
+  /**
+   * Applies both color and title styling to a pane in a single it2 call.
+   * Runs as fire-and-forget.
+   */
+  private applyPaneStyling(
+    paneId: PaneId,
+    name: string,
+    color: AgentColorName,
+  ): void {
+    const rgb = AGENT_COLOR_RGB[color]
+    const colorSeq = `\\033]6;1;bg;red;brightness;${rgb.r};green;brightness;${rgb.g};blue;brightness;${rgb.b}\\a`
+
+    // Escape name for shell injection safety (double quotes)
+    const escapedName = name.replace(/"/g, '\\"')
+    const titleSeq = `\\033]2;${escapedName}\\a`
+
+    logForDebugging(
+      `[ITermBackend] Applying styling to pane ${paneId} (fire-and-forget)`,
+    )
+
+    void this.runIt2Quietly([
+      'session',
+      'run',
+      '-s',
+      paneId,
+      `printf "${colorSeq}${titleSeq}"`,
+    ])
+  }
+
+  /**
+   * Runs an it2 command and logs any errors without throwing.
+   */
+  private async runIt2Quietly(args: string[]): Promise<void> {
+    try {
+      const result = await runIt2(args)
+      if (result.code !== 0) {
+        logForDebugging(
+          `[ITermBackend] it2 command failed (${args.join(' ')}): ${result.stderr}`,
+        )
+      }
+    } catch (err) {
+      logForDebugging(`[ITermBackend] it2 command threw: ${err}`)
+    }
   }
 
   /**
