@@ -32,7 +32,7 @@ export function getSteps(): Step[] {
     },
     {
       key: 'APEXmd',
-      text: 'Run /init to create a APEX.md file with instructions for APEX',
+      text: 'Run /init to create an APEX.md file with project instructions for APEX',
       isComplete: hasAPEXMd,
       isCompletable: true,
       isEnabled: !isWorkspaceDirEmpty,

@@ -5,7 +5,8 @@
       "Bash(cloudflared tunnel:*)",
       "Bash(\"C:/Program Files \\(x86\\)/cloudflared/cloudflared\" tunnel create gwe)",
       "Bash(\"C:/Program Files \\(x86\\)/cloudflared/cloudflared\" tunnel run gwe)",
-      "Bash(ollama run:*)"
+      "Bash(ollama run:*)",
+      "Bash(ollama list:*)"
     ]
   }
 }

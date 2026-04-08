@@ -1,5 +1,6 @@
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
 import { getInitialMainLoopModel } from '../../bootstrap/state.js'
+import { spawnSync } from 'child_process'
 import {
   isAPEXAISubscriber,
   isCodexSubscriber,
@@ -15,6 +16,7 @@ import {
 } from '../modelCost.js'
 import { getSettings_DEPRECATED } from '../settings/settings.js'
 import { checkOpus1mAccess, checkSonnet1mAccess } from './check1mAccess.js'
+import { getAntModels } from './antModels.js'
 import { getAPIProvider } from './providers.js'
 import { isModelAllowed } from './modelAllowlist.js'
 import {
@@ -41,6 +43,50 @@ export type ModelOption = {
   label: string
   description: string
   descriptionForModel?: string
+}
+
+function discoverOllamaModelOptions(): ModelOption[] {
+  const parseOllamaListOutput = (stdout: string): string[] => {
+    return stdout
+      .split(/\r?\n/)
+      .slice(1) // Skip header row (NAME ID SIZE MODIFIED)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => line.split(/\s+/)[0])
+      .filter((name): name is string => Boolean(name && name !== 'NAME'))
+  }
+
+  try {
+    let result = spawnSync('ollama', ['list'], {
+      encoding: 'utf8',
+      timeout: 5000,
+      windowsHide: true,
+    })
+
+    // Windows PATH resolution can fail for child_process in some shells.
+    // Fallback via pwsh keeps discovery working for /model.
+    if ((!result.stdout || result.status !== 0) && process.platform === 'win32') {
+      result = spawnSync('pwsh', ['-NoProfile', '-Command', 'ollama list'], {
+        encoding: 'utf8',
+        timeout: 5000,
+        windowsHide: true,
+      })
+    }
+
+    if (result.status !== 0 || !result.stdout) {
+      return []
+    }
+
+    const models = parseOllamaListOutput(result.stdout)
+
+    return [...new Set(models)].map(name => ({
+      value: name,
+      label: name,
+      description: `Local Ollama model (${name})`,
+    }))
+  } catch {
+    return []
+  }
 }
 
 export function getDefaultOptionForUser(fastMode = false): ModelOption {
@@ -500,6 +546,16 @@ function getKnownModelOption(model: string): ModelOption | null {
 export function getModelOptions(fastMode = false): ModelOption[] {
   const options = getModelOptionsBase(fastMode)
 
+  // When using non-first-party providers, surface locally installed Ollama
+  // models automatically so users can pick them directly from /model.
+  if (getAPIProvider() !== 'firstParty') {
+    for (const localOption of discoverOllamaModelOptions()) {
+      if (!options.some(existing => existing.value === localOption.value)) {
+        options.push(localOption)
+      }
+    }
+  }
+
   // Add the custom model from the ANTHROPIC_CUSTOM_MODEL_OPTION env var
   const envCustomModel = process.env.ANTHROPIC_CUSTOM_MODEL_OPTION
   if (
@@ -572,8 +628,15 @@ function filterModelOptionsByAllowlist(options: ModelOption[]): ModelOption[] {
   if (!settings.availableModels) {
     return options // No restrictions
   }
+
+  const preserveLocalOllamaOption = (opt: ModelOption): boolean =>
+    typeof opt.value === 'string' &&
+    opt.description.startsWith('Local Ollama model (')
+
   return options.filter(
     opt =>
-      opt.value === null || (opt.value !== null && isModelAllowed(opt.value)),
+      opt.value === null ||
+      preserveLocalOllamaOption(opt) ||
+      (opt.value !== null && isModelAllowed(opt.value)),
   )
 }

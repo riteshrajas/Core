@@ -12,3 +12,7 @@ declare module '*.node' {
   const value: unknown
   export default value
 }
+
+declare module 'bun:bundle' {
+  export function feature(flag: string): boolean
+}

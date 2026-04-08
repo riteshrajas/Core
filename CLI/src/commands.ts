@@ -85,9 +85,7 @@ const forceSnip = feature('HISTORY_SNIP')
   ? require('./commands/force-snip.js').default
   : null
 const workflowsCmd = feature('WORKFLOW_SCRIPTS')
-  ? (
-      require('./commands/workflows/index.js') as typeof import('./commands/workflows/index.js')
-    ).default
+  ? (require('./commands/workflows/index.js') as { default: any }).default
   : null
 const webCmd = feature('CCR_REMOTE_SETUP')
   ? (
@@ -95,9 +93,9 @@ const webCmd = feature('CCR_REMOTE_SETUP')
     ).default
   : null
 const clearSkillIndexCache = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (
-      require('./services/skillSearch/localSearch.js') as typeof import('./services/skillSearch/localSearch.js')
-    ).clearSkillIndexCache
+  ? (require('./services/skillSearch/localSearch') as {
+      clearSkillIndexCache?: () => void
+    }).clearSkillIndexCache
   : null
 const subscribePr = feature('KAIROS_GITHUB_WEBHOOKS')
   ? require('./commands/subscribe-pr.js').default
@@ -107,19 +105,13 @@ const ultraplan = feature('ULTRAPLAN')
   : null
 const torch = feature('TORCH') ? require('./commands/torch.js').default : null
 const peersCmd = feature('UDS_INBOX')
-  ? (
-      require('./commands/peers/index.js') as typeof import('./commands/peers/index.js')
-    ).default
+  ? (require('./commands/peers/index.js') as { default: any }).default
   : null
 const forkCmd = feature('FORK_SUBAGENT')
-  ? (
-      require('./commands/fork/index.js') as typeof import('./commands/fork/index.js')
-    ).default
+  ? (require('./commands/fork/index.js') as { default: any }).default
   : null
 const buddy = feature('BUDDY')
-  ? (
-      require('./commands/buddy/index.js') as typeof import('./commands/buddy/index.js')
-    ).default
+  ? (require('./commands/buddy/index.js') as { default: any }).default
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import thinkback from './commands/thinkback/index.js'
@@ -186,6 +178,7 @@ import rateLimitOptions from './commands/rate-limit-options/index.js'
 import statusline from './commands/statusline.js'
 import effort from './commands/effort/index.js'
 import stats from './commands/stats/index.js'
+import { productivityCommands } from './commands/productivity-pack.js'
 // insights.ts is 113KB (3200 lines, includes diffLines/html rendering). Lazy
 // shim defers the heavy module until /insights is actually invoked.
 const usageReport: Command = {
@@ -300,6 +293,7 @@ const COMMANDS = memoize((): Command[] => [
   session,
   skills,
   stats,
+  ...productivityCommands,
   status,
   statusline,
   stickers,
@@ -401,9 +395,9 @@ async function getSkills(cwd: string): Promise<{
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const getWorkflowCommands = feature('WORKFLOW_SCRIPTS')
-  ? (
-      require('./tools/WorkflowTool/createWorkflowCommand.js') as typeof import('./tools/WorkflowTool/createWorkflowCommand.js')
-    ).getWorkflowCommands
+  ? (require('./tools/WorkflowTool/createWorkflowCommand.js') as {
+      getWorkflowCommands?: (...args: any[]) => Promise<Command[]>
+    }).getWorkflowCommands
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 

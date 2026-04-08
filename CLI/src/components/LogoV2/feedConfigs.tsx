@@ -21,7 +21,7 @@ export function createRecentActivityFeed(activities: LogOption[]): FeedConfig {
     title: 'Recent activity',
     lines,
     footer: lines.length > 0 ? '/resume for more' : undefined,
-    emptyMessage: 'No recent activity'
+    emptyMessage: 'No recent activity yet'
   };
 }
 export function createWhatsNewFeed(releaseNotes: string[]): FeedConfig {
@@ -67,7 +67,7 @@ export function createProjectOnboardingFeed(steps: Step[]): FeedConfig {
     });
   }
   return {
-    title: 'Tips for getting started',
+    title: 'Getting started tips',
     lines
   };
 }

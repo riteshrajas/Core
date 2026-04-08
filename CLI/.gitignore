@@ -1,5 +1,12 @@
-node_modules/
-dist/
-cli
-cli-dev
-openclaw/
+# Byte‑compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+
+# Distribution / packaging
+build/
+ dist/
+*.egg-info/

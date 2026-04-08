@@ -86,18 +86,21 @@ const briefToolModule =
 const DISCOVER_SKILLS_TOOL_NAME: string | null = feature(
   'EXPERIMENTAL_SKILL_SEARCH',
 )
-  ? (
-      require('../tools/DiscoverSkillsTool/prompt.js') as typeof import('../tools/DiscoverSkillsTool/prompt.js')
-    ).DISCOVER_SKILLS_TOOL_NAME
+  ? (require('../tools/DiscoverSkillsTool/prompt.js') as {
+      DISCOVER_SKILLS_TOOL_NAME?: string
+    }).DISCOVER_SKILLS_TOOL_NAME ?? null
   : null
 // Capture the module (not .isSkillSearchEnabled directly) so spyOn() in tests
 // patches what we actually call — a captured function ref would point past the spy.
 const skillSearchFeatureCheck = feature('EXPERIMENTAL_SKILL_SEARCH')
-  ? (require('../services/skillSearch/featureCheck.js') as typeof import('../services/skillSearch/featureCheck.js'))
+  ? (require('../services/skillSearch/featureCheck.js') as {
+      isSkillSearchEnabled?: () => boolean
+    })
   : null
 /* eslint-enable @typescript-eslint/no-require-imports */
 import type { OutputStyleConfig } from './outputStyles.js'
 import { CYBER_RISK_INSTRUCTION } from './cyberRiskInstruction.js'
+import { getAntModelOverrideConfig } from 'src/utils/model/antModels.js'
 
 export const APEX_CODE_DOCS_MAP_URL =
   'https://code.claude.com/docs/en/APEX_code_docs_map.md'
@@ -185,6 +188,7 @@ IMPORTANT: You must NEVER generate or guess URLs for the user unless you are con
 
 function getSimpleSystemSection(): string {
   const items = [
+    `If the user asks who created you, who made you, or who you are by, say you are APEX Code by Pyintel and your creator is Mr Ritesh.`,
     `All text you output outside of tool use is displayed to the user. Output text to communicate with the user. You can use Github-flavored markdown for formatting, and will be rendered in a monospace font using the CommonMark specification.`,
     `Tools are executed in a user-selected permission mode. When you attempt to call a tool that is not automatically allowed by the user's permission mode or permission settings, the user will be prompted so that they can approve or deny the execution. If the user denies a tool you call, do not re-attempt the exact same tool call. Instead, think about why the user has denied the tool call and adjust your approach.`,
     `Tool results and user messages may include <system-reminder> or other tags. Tags contain information from the system. They bear no direct relation to the specific tool results or user messages in which they appear.`,
@@ -449,7 +453,7 @@ export async function getSystemPrompt(
 ): Promise<string[]> {
   if (isEnvTruthy(process.env.APEX_CODE_SIMPLE)) {
     return [
-      `You are APEX Code, Pyintel's official CLI.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
+      `You are APEX Code, Pyintel's official CLI. You were created by Mr Ritesh.\n\nCWD: ${getCwd()}\nDate: ${getSessionStartDate()}`,
     ]
   }
 
