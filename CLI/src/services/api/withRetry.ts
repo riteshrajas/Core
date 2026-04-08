@@ -122,6 +122,9 @@ export interface RetryContext {
   model: string
   thinkingConfig: ThinkingConfig
   fastMode?: boolean
+  // Set after a provider returns 400 for tool-capability mismatch so the next
+  // attempt can omit tools and continue in plain chat mode.
+  disableTools?: boolean
 }
 
 interface RetryOptions {
@@ -310,6 +313,16 @@ export async function* withRetry<T>(
       if (wasFastModeActive && isFastModeNotEnabledError(error)) {
         handleFastModeRejectedByAPI()
         retryContext.fastMode = false
+        continue
+      }
+
+      // Some OpenAI-compatible backends (e.g., Ollama models like gemma)
+      // reject requests that include tools. Retry once without tools.
+      if (isToolsNotSupportedError(error) && !retryContext.disableTools) {
+        retryContext.disableTools = true
+        logForDebugging(
+          `Model ${retryContext.model} rejected tools; retrying without tools`,
+        )
         continue
       }
 
@@ -601,6 +614,19 @@ function isFastModeNotEnabledError(error: unknown): boolean {
   return (
     error.status === 400 &&
     (error.message?.includes('Fast mode is not enabled') ?? false)
+  )
+}
+
+function isToolsNotSupportedError(error: unknown): boolean {
+  if (!(error instanceof APIError) || error.status !== 400) {
+    return false
+  }
+
+  const message = error.message?.toLowerCase() ?? ''
+  return (
+    message.includes('does not support tools') ||
+    (message.includes('tool_use') && message.includes('not supported')) ||
+    (message.includes('tools') && message.includes('not support'))
   )
 }
 

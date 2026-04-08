@@ -2,7 +2,7 @@ import { isInBundledMode } from 'src/utils/bundledMode.js';
 import { getCurrentInstallationType } from 'src/utils/doctorDiagnostic.js';
 import { isEnvTruthy } from 'src/utils/envUtils.js';
 import { useStartupNotification } from './useStartupNotification.js';
-const NPM_DEPRECATION_MESSAGE = 'APEX Code has switched from npm to native installer. Run `APEX install` or see https://docs.anthropic.com/en/docs/APEX-code/getting-started for more options.';
+const NPM_DEPRECATION_MESSAGE = 'Native installer is active. Run `APEX install` for setup options.';
 export function useNpmDeprecationNotification() {
   useStartupNotification(_temp);
 }

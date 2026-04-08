@@ -1694,6 +1694,8 @@ async function* queryModel(
       ? (options.temperatureOverride ?? 1)
       : undefined
 
+    const includeTools = !retryContext.disableTools
+
     lastRequestBetas = betasParams
 
     return {
@@ -1708,8 +1710,10 @@ async function* queryModel(
         options.skipCacheWrite,
       ),
       system,
-      tools: allTools,
-      tool_choice: options.toolChoice,
+      ...(includeTools && {
+        tools: allTools,
+        tool_choice: options.toolChoice,
+      }),
       ...(useBetas && { betas: betasParams }),
       metadata: getAPIMetadata(),
       max_tokens: maxOutputTokens,
