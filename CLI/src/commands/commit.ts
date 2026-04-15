@@ -57,7 +57,19 @@ You have the capability to call multiple tools in a single response. Stage and c
 const command = {
   type: 'prompt',
   name: 'commit',
+  group: 'code',
+  tags: ['git', 'commit', 'version-control'],
   description: 'Create a git commit',
+  examples: [
+    {
+      description: 'Create a commit with AI-generated message',
+      command: '/commit',
+    },
+    {
+      description: 'Preview commit before executing',
+      command: '/commit --dry-run',
+    },
+  ],
   allowedTools: ALLOWED_TOOLS,
   contentLength: 0, // Dynamic content
   progressMessage: 'creating commit',

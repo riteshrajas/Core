@@ -143,6 +143,11 @@ import sandboxToggle from './commands/sandbox-toggle/index.js'
 import chrome from './commands/chrome/index.js'
 import stickers from './commands/stickers/index.js'
 import advisor from './commands/advisor.js'
+import commandsDiscovery from './commands/commands/index.js'
+import aliasCmd from './commands/alias/index.js'
+import macroCmd from './commands/macro/index.js'
+import examplesCmd from './commands/examples/index.js'
+import dryrunCmd from './commands/dryrun/index.js'
 import { logError } from './utils/log.js'
 import { toError } from './utils/errors.js'
 import { logForDebugging } from './utils/debug.js'
@@ -252,12 +257,14 @@ const COMMANDS = memoize((): Command[] => [
   addDir,
   advisor,
   agents,
+  aliasCmd,
   autofix,
   branch,
   btw,
   chrome,
   clear,
   color,
+  commandsDiscovery,
   compact,
   config,
   copy,
@@ -267,8 +274,10 @@ const COMMANDS = memoize((): Command[] => [
   cost,
   diff,
   doctor,
+  dryrunCmd,
   effort,
   exit,
+  examplesCmd,
   fast,
   files,
   heapDump,
@@ -278,6 +287,7 @@ const COMMANDS = memoize((): Command[] => [
   keybindings,
   installGitHubApp,
   installSlackApp,
+  macroCmd,
   mcp,
   memory,
   mobile,

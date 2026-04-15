@@ -172,6 +172,11 @@ export type CommandAvailability =
   // Console API key user (direct api.anthropic.com, not via APEX.ai OAuth)
   | 'console'
 
+export type CommandExample = {
+  description: string
+  command: string
+}
+
 export type CommandBase = {
   availability?: CommandAvailability[]
   description: string
@@ -200,6 +205,12 @@ export type CommandBase = {
   isSensitive?: boolean // If true, args are redacted from the conversation history
   /** Defaults to `name`. Only override when the displayed name differs (e.g. plugin prefix stripping). */
   userFacingName?: () => string
+  // New metadata for discovery and help
+  group?: 'code' | 'config' | 'planning' | 'tools' | 'integration' | 'admin' | 'utility'
+  tags?: string[]
+  examples?: CommandExample[]
+  relatedCommands?: string[]
+  dryRunSupport?: boolean
 }
 
 export type Command = CommandBase &
