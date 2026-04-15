@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { errorRecoveryManager, ErrorCategory } from '../../services/errorRecoveryManager.js'
-import { Dialog } from '../../components/design-system/Dialog.js'
-import { FuzzyPicker } from '../../components/design-system/FuzzyPicker.js'
 import { Box, Text } from '../../ink.js'
-import { useTheme } from '../../utils/theme.js'
 import type { LocalJSXCommandOnDone } from '../../types/command.js'
 
 export const call = (
@@ -27,7 +24,6 @@ function ErrorRecoveryCommand({ onDone }: { onDone: LocalJSXCommandOnDone }): Re
   const [viewMode, setViewMode] = useState<ViewMode>('menu')
   const [selectedFilter, setSelectedFilter] = useState<ErrorCategory | 'all'>('all')
   const [selectedError, setSelectedError] = useState<string | null>(null)
-  const theme = useTheme()
 
   const stats = errorRecoveryManager.getErrorStats()
   const allHistory = errorRecoveryManager.getErrorHistory(10)

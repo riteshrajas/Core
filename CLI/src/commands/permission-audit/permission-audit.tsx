@@ -1,8 +1,6 @@
 import * as React from 'react'
-import { Box, Text } from 'ink'
-import SelectInput from 'ink-select-input'
-import TextInput from 'ink-text-input'
-import type { LocalJSXCommandCall } from '../../types/command.js'
+import { Box, Text } from '../../ink.js'
+import type { LocalJSXCommandOnDone } from '../../types/command.js'
 import { permissionAuditLogger, type AuditEntry, type AuditReport } from '../../services/permissionAuditLogger.js'
 
 interface ViewState {

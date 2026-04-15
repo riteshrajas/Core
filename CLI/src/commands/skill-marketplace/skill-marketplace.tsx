@@ -3,7 +3,7 @@ import type { LocalJSXCommandContext } from '../../commands.js'
 import { Box, Text, render } from '../../ink.js'
 import type { LocalJSXCommandOnDone } from '../../types/command.js'
 import { logForDebugging } from '../../utils/debug.js'
-import { MarketplaceClient } from '../../services/marketplaceClient.js'
+import { marketplaceClient } from '../../services/marketplaceClient.js'
 import type { Skill } from '../../services/marketplaceClient.js'
 
 interface SkillMarketplaceProps {
