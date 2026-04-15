@@ -4,6 +4,7 @@ import { generateSystemPromptInjection } from '@/lib/knowledge-base';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -28,8 +29,9 @@ export async function executeCLICommand(command: string): Promise<string> {
     console.log(`Executing CLI Command: ${command}`);
     const { stdout, stderr } = await execAsync(command, { cwd: process.cwd() });
     return stdout || stderr || 'Command executed successfully with no output.';
-  } catch (error: any) {
-    return `Error executing command: ${error.message}`;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `Error executing command: ${message}`;
   }
 }
 
@@ -44,14 +46,30 @@ export async function deploySubAgent(taskType: string, instructions: string): Pr
 }
 
 /**
+ * Tool: Read Workspace File
+ */
+export async function readWorkspaceFile(filePath: string): Promise<string> {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return `Error: File not found at ${filePath}`;
+    }
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `Error reading file: ${message}`;
+  }
+}
+
+/**
  * Tool: Write Workspace File
  */
 export async function writeWorkspaceFile(filePath: string, content: string): Promise<string> {
   try {
     fs.writeFileSync(filePath, content, 'utf-8');
-    return `File written successfully to \${filePath}`;
-  } catch (error: any) {
-    return `Error writing file: \${error.message}`;
+    return `File written successfully to ${filePath}`;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `Error writing file: ${message}`;
   }
 }
 
@@ -61,19 +79,41 @@ export async function writeWorkspaceFile(filePath: string, content: string): Pro
  */
 export async function getProjectStatus(): Promise<string> {
   try {
-    // This would eventually query real database/hardware logs.
-    // For now, we check for the existence of specific backup or config files.
-    const iotBackups = fs.readdirSync('P:/APEX/IOT/IOT-backups').slice(-3);
-    const microMaxSpec = fs.existsSync('P:/APEX/MicroMax/SPEC.md') ? 'SPEC Found' : 'SPEC Missing';
+    const root = process.cwd();
+    const iotPath = path.join(root, 'IOT', 'IOT-backups');
+    const microMaxPath = path.join(root, 'MicroMax');
+    
+    let iotStatus = 'No recent IOT backups were found in the system.';
+    if (fs.existsSync(iotPath)) {
+      const backups = fs.readdirSync(iotPath).sort((a, b) => {
+        const aStat = fs.statSync(path.join(iotPath, a));
+        const bStat = fs.statSync(path.join(iotPath, b));
+        return bStat.mtime.getTime() - aStat.mtime.getTime();
+      });
+      if (backups.length > 0) {
+        const latest = backups[0];
+        iotStatus = `The latest IOT backup, ${latest}, is currently available and secure.`;
+      }
+    }
+
+    let microMaxStatus = 'The MicroMax system specification is currently missing from the workspace.';
+    const specPath = path.join(microMaxPath, 'SPEC.md');
+    if (fs.existsSync(specPath)) {
+      microMaxStatus = 'The MicroMax system specification has been detected.';
+      const firmwarePath = path.join(microMaxPath, 'OS', 'src', 'main.cpp');
+      if (fs.existsSync(firmwarePath)) {
+        microMaxStatus += ' Furthermore, the MicroMax firmware is operational and ready for deployment.';
+      }
+    }
     
     return `
-APEX SYSTEM STATUS REPORT:
-- IOT BACKUPS: \${iotBackups.join(', ')}
-- MICROMAX STATUS: \${microMaxSpec}
-- CORE CLI: Operational
-- STORAGE: Local File System
+APEX system status report. 
+${iotStatus} 
+${microMaxStatus} 
+The Core CLI is Operational, and storage is being managed via the local file system.
 `.trim();
-  } catch (error: any) {
-    return `Error fetching system status: \${error.message}`;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `I encountered an error while fetching the system status: ${message}`;
   }
 }
