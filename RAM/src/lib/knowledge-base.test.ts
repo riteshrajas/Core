@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { loadKnowledgeBase } from './knowledge-base';
+import { loadKnowledgeBase, generateSystemPromptInjection } from './knowledge-base';
 
 function withTempCwd(run: (tmpDir: string) => void) {
   const previousCwd = process.cwd();
@@ -127,5 +127,32 @@ test('loadKnowledgeBase falls back only for invalid files', () => {
     assert.deepEqual(kb.skills.languages, ['Go']);
     assert.deepEqual(kb.goals.currentProjects, ['Ghost']);
     assert.equal(kb.preferences.communicationStyle.tone, 'Professional');
+  });
+});
+
+test('generateSystemPromptInjection returns a non-empty string with KB content', () => {
+  withTempCwd((tmpDir) => {
+    process.chdir(tmpDir);
+    writeKbFile(tmpDir, 'profile.json', {
+      coreIdentity: {
+        name: 'TestBot',
+        age: 1,
+        birthday: 'Today',
+        location: 'Cloud',
+        profession: 'Tester',
+        background: 'Clean',
+        keyLifeEvents: ['Initialization'],
+      },
+      recurringThemes: ['Testing'],
+      importantRelationships: ['Developer'],
+    });
+
+    // We don't need to write all files, defaults will be used for others
+    const prompt = generateSystemPromptInjection();
+
+    assert.ok(typeof prompt === 'string');
+    assert.ok(prompt.includes('TestBot'));
+    assert.ok(prompt.includes('Initialization'));
+    assert.ok(prompt.includes('--- SYSTEM CONTEXT: APEX REALTIME AGENT MODE ---'));
   });
 });
