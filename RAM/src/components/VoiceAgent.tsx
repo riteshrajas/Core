@@ -4,16 +4,21 @@ import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Loader2, AlertCircle, Terminal, Zap } from 'lucide-react';
 import { getPersonalizedPrompt, executeCLICommand, deploySubAgent, readWorkspaceFile, writeWorkspaceFile, getProjectStatus } from '@/app/actions';
+import { performSync, SyncState } from '@/lib/sync-manager';
 
 export default function VoiceAgent() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [connectionLogs, setConnectionLogs] = useState<string[]>([]);
   const [showDebug, setShowDebug] = useState(false);
-  const hasInjectedRef = useRef(false);
+  const syncStateRef = useRef<SyncState>({
+    hasSynced: false,
+    isSyncing: false,
+    retryCount: 0
+  });
   
   const addLog = useCallback((msg: string) => {
-    console.log(`[APEX] \${msg}`);
+    console.log(`[APEX] ${msg}`);
     setConnectionLogs(prev => [...prev.slice(-15), msg]);
   }, []);
 
@@ -26,7 +31,11 @@ export default function VoiceAgent() {
     onDisconnect: () => {
       addLog('Link Severed.');
       setIsConnecting(false);
-      hasInjectedRef.current = false;
+      syncStateRef.current = {
+        hasSynced: false,
+        isSyncing: false,
+        retryCount: 0
+      };
     },
     onError: (error) => {
       console.error('ElevenLabs Error:', error);
@@ -40,27 +49,23 @@ export default function VoiceAgent() {
   const lastStatusRef = useRef<string | null>(null);
   useEffect(() => {
     if (status && status !== lastStatusRef.current) {
-      addLog(`SDK Status: \${status}`);
+      addLog(`SDK Status: ${status}`);
       lastStatusRef.current = status;
     }
   }, [status, addLog]);
 
   const syncIdentity = useCallback(async () => {
-    if (hasInjectedRef.current) return;
-    try {
-      addLog('Injecting Neural Data...');
-      const fullPrompt = await getPersonalizedPrompt();
-      await conversation.sendContextualUpdate(fullPrompt);
-      addLog('Sync Complete. APEX RAM Online.');
-      hasInjectedRef.current = true;
-    } catch (err) {
-      addLog('Sync Failed.');
-    }
+    await performSync(
+      async (prompt) => await conversation.sendContextualUpdate(prompt),
+      getPersonalizedPrompt,
+      addLog,
+      syncStateRef.current
+    );
   }, [conversation, addLog]);
 
   // Auto-sync when connected
   useEffect(() => {
-    if (status === 'connected' && !hasInjectedRef.current) {
+    if (status === 'connected' && !syncStateRef.current.hasSynced) {
       syncIdentity();
     }
   }, [status, syncIdentity]);
