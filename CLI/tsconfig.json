@@ -6,7 +6,7 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
-    "types": [],
+    "types": ["bun-types", "node"],
     "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
@@ -22,3 +22,4 @@
   },
   "include": ["src", "scripts", "env.d.ts"]
 }
+

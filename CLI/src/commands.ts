@@ -121,6 +121,7 @@ import plan from './commands/plan/index.js'
 import fast from './commands/fast/index.js'
 import passes from './commands/passes/index.js'
 import privacySettings from './commands/privacy-settings/index.js'
+import settingsImportExport from './commands/settings-import-export/index.js'
 import hooks from './commands/hooks/index.js'
 import files from './commands/files/index.js'
 import branch from './commands/branch/index.js'
@@ -148,6 +149,13 @@ import aliasCmd from './commands/alias/index.js'
 import macroCmd from './commands/macro/index.js'
 import examplesCmd from './commands/examples/index.js'
 import dryrunCmd from './commands/dryrun/index.js'
+import profileCmd from './commands/profile/index.js'
+import settingsBrowserCmd from './commands/settings-browser/index.js'
+import errorRecoveryCmd from './commands/error-recovery/index.js'
+import permissionAuditCmd from './commands/permission-audit/index.js'
+import skillMarketplaceCmd from './commands/skill-marketplace/index.js'
+import taskDashboardCmd from './commands/task-dashboard/index.js'
+import sessionTemplateCmd from './commands/session-template/index.js'
 import { logError } from './utils/log.js'
 import { toError } from './utils/errors.js'
 import { logForDebugging } from './utils/debug.js'
@@ -276,6 +284,7 @@ const COMMANDS = memoize((): Command[] => [
   doctor,
   dryrunCmd,
   effort,
+  errorRecoveryCmd,
   exit,
   examplesCmd,
   fast,
@@ -293,6 +302,8 @@ const COMMANDS = memoize((): Command[] => [
   mobile,
   model,
   outputStyle,
+  permissionAuditCmd,
+  profileCmd,
   remoteEnv,
   plugin,
   pr_comments,
@@ -301,13 +312,18 @@ const COMMANDS = memoize((): Command[] => [
   rename,
   resume,
   session,
+  sessionTemplateCmd,
+  settingsBrowserCmd,
+  settingsImportExport,
   skills,
+  skillMarketplaceCmd,
   stats,
   ...productivityCommands,
   status,
   statusline,
   stickers,
   tag,
+  taskDashboardCmd,
   theme,
   feedback,
   review,

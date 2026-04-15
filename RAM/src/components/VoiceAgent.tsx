@@ -3,7 +3,7 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Loader2, AlertCircle, Terminal, Zap } from 'lucide-react';
-import { getPersonalizedPrompt } from '@/app/actions';
+import { getPersonalizedPrompt, executeCLICommand, deploySubAgent, readWorkspaceFile, writeWorkspaceFile, getProjectStatus } from '@/app/actions';
 
 export default function VoiceAgent() {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -13,7 +13,7 @@ export default function VoiceAgent() {
   const hasInjectedRef = useRef(false);
   
   const addLog = useCallback((msg: string) => {
-    console.log(`[APEX] ${msg}`);
+    console.log(`[APEX] \${msg}`);
     setConnectionLogs(prev => [...prev.slice(-15), msg]);
   }, []);
 
@@ -40,10 +40,30 @@ export default function VoiceAgent() {
   const lastStatusRef = useRef<string | null>(null);
   useEffect(() => {
     if (status && status !== lastStatusRef.current) {
-      addLog(`SDK Status: ${status}`);
+      addLog(`SDK Status: \${status}`);
       lastStatusRef.current = status;
     }
   }, [status, addLog]);
+
+  const syncIdentity = useCallback(async () => {
+    if (hasInjectedRef.current) return;
+    try {
+      addLog('Injecting Neural Data...');
+      const fullPrompt = await getPersonalizedPrompt();
+      await conversation.sendContextualUpdate(fullPrompt);
+      addLog('Sync Complete. APEX RAM Online.');
+      hasInjectedRef.current = true;
+    } catch (err) {
+      addLog('Sync Failed.');
+    }
+  }, [conversation, addLog]);
+
+  // Auto-sync when connected
+  useEffect(() => {
+    if (status === 'connected' && !hasInjectedRef.current) {
+      syncIdentity();
+    }
+  }, [status, syncIdentity]);
 
   const startConversation = useCallback(async () => {
     try {
@@ -56,9 +76,30 @@ export default function VoiceAgent() {
 
       const agentId = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID || '';
       
-      // TEST: Start with ZERO overrides to confirm base connectivity
       await conversation.startSession({
         agentId: agentId,
+        clientTools: {
+          executeCommand: async (parameters: { command: string }) => {
+            addLog(`Executing: \${parameters.command}`);
+            return await executeCLICommand(parameters.command);
+          },
+          deployAgent: async (parameters: { taskType: string, instructions: string }) => {
+            addLog(`Deploying Agent: \${parameters.taskType}`);
+            return await deploySubAgent(parameters.taskType, parameters.instructions);
+          },
+          readFile: async (parameters: { filePath: string }) => {
+            addLog(`Reading: \${parameters.filePath}`);
+            return await readWorkspaceFile(parameters.filePath);
+          },
+          writeFile: async (parameters: { filePath: string, content: string }) => {
+            addLog(`Writing: \${parameters.filePath}`);
+            return await writeWorkspaceFile(parameters.filePath, parameters.content);
+          },
+          getSystemStatus: async () => {
+            addLog(`Fetching System Status...`);
+            return await getProjectStatus();
+          }
+        }
       });
 
     } catch (error: any) {
@@ -66,19 +107,6 @@ export default function VoiceAgent() {
       setIsConnecting(false);
     }
   }, [conversation, addLog]);
-
-  // Separate function to trigger sync manually once connected
-  const syncIdentity = async () => {
-    try {
-      addLog('Injecting Neural Data...');
-      const fullPrompt = await getPersonalizedPrompt();
-      await conversation.sendContextualUpdate(fullPrompt);
-      addLog('Sync Complete.');
-      hasInjectedRef.current = true;
-    } catch (err) {
-      addLog('Sync Failed.');
-    }
-  };
 
   const stopConversation = useCallback(async () => {
     await conversation.endSession();
@@ -91,14 +119,7 @@ export default function VoiceAgent() {
       
       <div className="w-full flex justify-between items-center mb-4 px-2">
         <div className="flex gap-2">
-          {isActive && !hasInjectedRef.current && (
-            <button 
-              onClick={syncIdentity}
-              className="flex items-center gap-1.5 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 rounded-full text-[10px] font-bold border border-indigo-500/30 transition-all animate-pulse"
-            >
-              <Zap className="w-3 h-3" /> SYNC NEURAL DATA
-            </button>
-          )}
+          {/* Neural Sync button removed as it is now automatic */}
         </div>
         <button 
           onClick={() => setShowDebug(!showDebug)}
@@ -136,7 +157,7 @@ export default function VoiceAgent() {
 
       <div className="text-center space-y-6 w-full max-w-sm">
         <h2 className="text-2xl font-bold text-white tracking-tight">
-          {isConnecting ? 'Syncing Neurons...' : isActive ? 'APEX is Active' : 'Initialize APEX'}
+          {isConnecting ? 'Initializing APEX RAM...' : isActive ? 'RAM Online' : 'Initialize RAM'}
         </h2>
         
         {errorMessage && (
