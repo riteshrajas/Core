@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react'
-import { Text, Box } from 'ink'
+import { Text, Box, useInput } from 'ink'
 import type { LocalJSXCommandCall } from '../../types/command.js'
 import { settingsManager } from '../../services/settingsManager.js'
 
 const ProfileManagementComponent: React.FC<{
   action: string
   args: string[]
-  onDone: (result?: string) => void
+  onDone: (result?: string, options?: { display?: 'skip' | 'system' | 'user' }) => void
 }> = ({ action, args, onDone }) => {
   const [message, setMessage] = useState<string>('Processing...')
   const [profiles, setProfiles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [currentProfile, setCurrentProfile] = useState<string>('')
+
+  useInput((input, key) => {
+    if (key.escape || key.return || (key.ctrl && input === 'c')) {
+      onDone(undefined, { display: 'skip' })
+    }
+  })
 
   useEffect(() => {
     ;(async () => {
@@ -24,7 +30,7 @@ const ProfileManagementComponent: React.FC<{
               return
             }
             await settingsManager.createProfile(name, desc.join(' '))
-            setMessage(`✓ Profile "${name}" created`)
+            setMessage(`✓ Profile "${name}" created. Press Enter/Esc to exit.`)
             break
           }
           case 'delete': {
@@ -34,7 +40,7 @@ const ProfileManagementComponent: React.FC<{
               return
             }
             await settingsManager.deleteProfile(name)
-            setMessage(`✓ Profile "${name}" deleted`)
+            setMessage(`✓ Profile "${name}" deleted. Press Enter/Esc to exit.`)
             break
           }
           case 'use': {
@@ -44,7 +50,7 @@ const ProfileManagementComponent: React.FC<{
               return
             }
             await settingsManager.useProfile(name)
-            setMessage(`✓ Switched to profile "${name}"`)
+            setMessage(`✓ Switched to profile "${name}". Press Enter/Esc to exit.`)
             break
           }
           case 'list':
@@ -53,7 +59,7 @@ const ProfileManagementComponent: React.FC<{
             const current = await settingsManager.getCurrentProfile()
             setProfiles(list)
             setCurrentProfile(current)
-            setMessage(`Showing ${list.length} profile${list.length !== 1 ? 's' : ''}`)
+            setMessage(`Showing ${list.length} profile${list.length !== 1 ? 's' : ''}. Press Enter/Esc to exit.`)
             break
           }
         }
@@ -70,10 +76,12 @@ const ProfileManagementComponent: React.FC<{
   }
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection="column" padding={1} borderStyle="round">
       {profiles.length > 0 ? (
         <>
-          <Text bold>Available Profiles:</Text>
+          <Box marginBottom={1}>
+            <Text bold underline>Available Profiles</Text>
+          </Box>
           {profiles.map((profile) => (
             <Box key={profile.name} marginLeft={2} flexDirection="column" marginBottom={1}>
               <Text>
@@ -82,20 +90,28 @@ const ProfileManagementComponent: React.FC<{
                 ) : (
                   <Text>○ </Text>
                 )}
-                <Text color="cyan">{profile.name}</Text>
+                <Text color="cyan" bold>{profile.name}</Text>
                 {profile.description && (
                   <>
                     <Text> - </Text>
-                    <Text dimColor>{profile.description}</Text>
+                    <Text dimColor italic>{profile.description}</Text>
                   </>
                 )}
               </Text>
-              <Text dimColor>Modified: {new Date(profile.updatedAt).toLocaleString()}</Text>
+              <Box marginLeft={2}>
+                <Text dimColor size="small">Modified: {new Date(profile.updatedAt).toLocaleString()}</Text>
+              </Box>
             </Box>
           ))}
+          <Box marginTop={1}>
+            <Text dimColor>Press Enter or Esc to exit</Text>
+          </Box>
         </>
       ) : (
-        <Text>{message}</Text>
+        <Box flexDirection="column">
+          <Text>{message}</Text>
+          <Text dimColor marginTop={1}>Press Enter or Esc to exit</Text>
+        </Box>
       )}
     </Box>
   )
@@ -105,8 +121,6 @@ export const call: LocalJSXCommandCall = async (onDone, context, args) => {
   const parts = args.trim().split(/\s+/)
   const action = parts[0] ?? 'list'
   const restArgs = parts.slice(1)
-
-  onDone(undefined, { display: 'skip' })
 
   return <ProfileManagementComponent action={action} args={restArgs} onDone={onDone} />
 }

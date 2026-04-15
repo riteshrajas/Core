@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Text, Box } from 'ink'
+import { Text, Box, useInput } from 'ink'
 import * as fs from 'fs/promises'
 import * as path from 'path'
 import * as crypto from 'crypto'
@@ -58,13 +58,19 @@ function generateSettingsId(): string {
 const SettingsImportExportComponent: React.FC<{
   action: 'export' | 'import'
   parsed: ParsedArgs
-  onDone: (result?: string) => void
+  onDone: (result?: string, options?: { display?: 'skip' | 'system' | 'user' }) => void
 }> = ({ action, parsed, onDone }) => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState<string>('Processing...')
   const [details, setDetails] = useState<string>('')
-  const [profiles, setProfiles] = useState<string[]>([])
-  const [selectedProfile, setSelectedProfile] = useState<string>('')
+
+  useInput((input, key) => {
+    if (key.escape || key.return || (key.ctrl && input === 'c')) {
+      if (status !== 'loading') {
+        onDone(undefined, { display: 'skip' })
+      }
+    }
+  })
 
   useEffect(() => {
     ;(async () => {
@@ -89,24 +95,19 @@ const SettingsImportExportComponent: React.FC<{
       if (parsed.share) {
         const shareLink = generateShareLink(settingsData)
         const settingsId = generateSettingsId()
-        setMessage(`✓ Settings exported and ready to share`)
+        setMessage(`✓ Settings exported and ready to share. Press Enter/Esc to exit.`)
         setDetails(`Share Link ID: ${settingsId}\nLink: ${shareLink}`)
         setStatus('success')
-        onDone(`Settings exported from profile "${profileToExport}" - Ready to share`, {
-          display: 'system',
-        })
       } else if (parsed.output) {
         const outputPath = path.resolve(parsed.output)
         await fs.writeFile(outputPath, settingsData, 'utf-8')
-        setMessage(`✓ Settings exported successfully`)
+        setMessage(`✓ Settings exported successfully. Press Enter/Esc to exit.`)
         setDetails(`Profile: ${profileToExport}\nFile: ${outputPath}`)
         setStatus('success')
-        onDone(`Settings exported to ${parsed.output}`, { display: 'system' })
       } else {
-        setMessage(`✓ Settings data ready`)
+        setMessage(`✓ Settings data ready. Press Enter/Esc to exit.`)
         setDetails(`Profile: ${profileToExport}\nSize: ${settingsData.length} bytes`)
         setStatus('success')
-        onDone(`Settings from profile "${profileToExport}" exported`, { display: 'system' })
       }
     } catch (error) {
       throw error
@@ -134,19 +135,16 @@ const SettingsImportExportComponent: React.FC<{
       const imported = JSON.parse(settingsData)
       const settingCount = Object.keys(imported).length
 
-      setMessage(`✓ Settings imported successfully`)
+      setMessage(`✓ Settings imported successfully. Press Enter/Esc to exit.`)
       setDetails(`Profile: ${targetProfile}\nSettings imported: ${settingCount}`)
       setStatus('success')
-      onDone(`Imported ${settingCount} settings into profile "${targetProfile}"`, {
-        display: 'system',
-      })
     } catch (error) {
       throw error
     }
   }
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column" padding={1} borderStyle="round">
       <Box flexDirection="row" gap={2} marginBottom={1}>
         <Text bold color={status === 'success' ? 'green' : status === 'error' ? 'red' : 'cyan'}>
           {status === 'loading' && '⟳'}
@@ -176,19 +174,25 @@ const SettingsImportExportComponent: React.FC<{
           <Text dimColor>/settings-import-export import --from-url {details.split('\n')[1]?.replace('Link: ', '')}</Text>
         </Box>
       )}
+
+      {status !== 'loading' && (
+        <Box marginTop={1}>
+          <Text dimColor>Press Enter or Esc to exit</Text>
+        </Box>
+      )}
     </Box>
   )
 }
 
-const HelpComponent: React.FC<{ onDone: (result?: string) => void }> = ({ onDone }) => {
-  useEffect(() => {
-    onDone('Settings Import/Export Help - Use /settings-import-export [export|import] with appropriate flags', {
-      display: 'system',
-    })
-  }, [onDone])
+const HelpComponent: React.FC<{ onDone: (result?: string, options?: { display?: 'skip' | 'system' | 'user' }) => void }> = ({ onDone }) => {
+  useInput((input, key) => {
+    if (key.escape || key.return || (key.ctrl && input === 'c')) {
+      onDone(undefined, { display: 'skip' })
+    }
+  })
 
   return (
-    <Box flexDirection="column" padding={1} gap={1}>
+    <Box flexDirection="column" padding={1} gap={1} borderStyle="round">
       <Text bold color="cyan">Settings Import/Export Usage</Text>
 
       <Box flexDirection="column" marginLeft={2} gap={1}>
@@ -208,6 +212,10 @@ const HelpComponent: React.FC<{ onDone: (result?: string) => void }> = ({ onDone
         <Text dimColor>--from FILE         Import from file</Text>
         <Text dimColor>--from-url LINK     Import from share link</Text>
         <Text dimColor>--profile NAME      Target profile (default: current profile)</Text>
+      </Box>
+
+      <Box marginTop={1}>
+        <Text dimColor>Press Enter or Esc to exit</Text>
       </Box>
     </Box>
   )

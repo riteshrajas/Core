@@ -1,33 +1,184 @@
 import fs from 'fs';
 import path from 'path';
+export interface Profile {
+  coreIdentity: {
+    name: string;
+    age: number;
+    birthday: string;
+    location: string;
+    profession: string;
+    background: string;
+    keyLifeEvents: string[];
+  };
+  recurringThemes: string[];
+  importantRelationships: string[];
+}
+
+export interface Skills {
+  languages: string[];
+  frameworks: string[];
+  tools: string[];
+  codingStyle: string;
+  strengths: string[];
+  areasOfImprovement: string[];
+}
+
+export interface Goals {
+  currentProjects: string[];
+  shortTermGoals: string[];
+  longTermAmbitions: string[];
+  values: string[];
+}
+
+export interface Preferences {
+  likes: string[];
+  dislikes: string[];
+  hobbies: string[];
+  routines: string[];
+  communicationStyle: {
+    tone: string;
+    formatting: string;
+    aiResponsePreferences: string;
+  };
+}
 
 export interface KnowledgeBase {
-  profile: any;
-  skills: any;
-  goals: any;
-  preferences: any;
+  profile: Profile;
+  skills: Skills;
+  goals: Goals;
+  preferences: Preferences;
+}
+const EMPTY_PROFILE: Profile = {
+  coreIdentity: {
+    name: '',
+    age: 0,
+    birthday: '',
+    location: '',
+    profession: '',
+    background: '',
+    keyLifeEvents: [],
+  },
+  recurringThemes: [],
+  importantRelationships: [],
+};
+
+const EMPTY_SKILLS: Skills = {
+  languages: [],
+  frameworks: [],
+  tools: [],
+  codingStyle: '',
+  strengths: [],
+  areasOfImprovement: [],
+};
+
+const EMPTY_GOALS: Goals = {
+  currentProjects: [],
+  shortTermGoals: [],
+  longTermAmbitions: [],
+  values: [],
+};
+
+const EMPTY_PREFERENCES: Preferences = {
+  likes: [],
+  dislikes: [],
+  hobbies: [],
+  routines: [],
+  communicationStyle: {
+    tone: '',
+    formatting: '',
+    aiResponsePreferences: '',
+  },
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+function isProfile(value: unknown): value is Profile {
+  if (!isObject(value)) return false;
+  const coreIdentity = value.coreIdentity;
+  if (!isObject(coreIdentity)) return false;
+
+  return (
+    typeof coreIdentity.name === 'string' &&
+    typeof coreIdentity.age === 'number' &&
+    typeof coreIdentity.birthday === 'string' &&
+    typeof coreIdentity.location === 'string' &&
+    typeof coreIdentity.profession === 'string' &&
+    typeof coreIdentity.background === 'string' &&
+    isStringArray(coreIdentity.keyLifeEvents) &&
+    isStringArray(value.recurringThemes) &&
+    isStringArray(value.importantRelationships)
+  );
+}
+
+function isSkills(value: unknown): value is Skills {
+  if (!isObject(value)) return false;
+  return (
+    isStringArray(value.languages) &&
+    isStringArray(value.frameworks) &&
+    isStringArray(value.tools) &&
+    typeof value.codingStyle === 'string' &&
+    isStringArray(value.strengths) &&
+    isStringArray(value.areasOfImprovement)
+  );
+}
+
+function isGoals(value: unknown): value is Goals {
+  if (!isObject(value)) return false;
+  return (
+    isStringArray(value.currentProjects) &&
+    isStringArray(value.shortTermGoals) &&
+    isStringArray(value.longTermAmbitions) &&
+    isStringArray(value.values)
+  );
+}
+
+function isPreferences(value: unknown): value is Preferences {
+  if (!isObject(value)) return false;
+  const communicationStyle = value.communicationStyle;
+  if (!isObject(communicationStyle)) return false;
+
+  return (
+    isStringArray(value.likes) &&
+    isStringArray(value.dislikes) &&
+    isStringArray(value.hobbies) &&
+    isStringArray(value.routines) &&
+    typeof communicationStyle.tone === 'string' &&
+    typeof communicationStyle.formatting === 'string' &&
+    typeof communicationStyle.aiResponsePreferences === 'string'
+  );
 }
 
 export function loadKnowledgeBase(): KnowledgeBase {
   const kbDir = path.join(process.cwd(), 'src', 'knowledge-base');
-
-  const readFile = (filename: string) => {
+  const readTypedFile = <T>(
+    filename: string,
+    isValid: (value: unknown) => value is T,
+    fallback: T
+  ): T => {
     try {
       const filePath = path.join(kbDir, filename);
       if (fs.existsSync(filePath)) {
-        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        if (isValid(parsed)) {
+          return parsed;
+        }
+        console.error(`Invalid shape for ${filename}; falling back to defaults.`);
       }
     } catch (error) {
       console.error(`Failed to load ${filename}:`, error);
     }
-    return {};
+    return fallback;
   };
 
   return {
-    profile: readFile('profile.json'),
-    skills: readFile('skills.json'),
-    goals: readFile('goals.json'),
-    preferences: readFile('preferences.json'),
+    profile: readTypedFile('profile.json', isProfile, EMPTY_PROFILE),
+    skills: readTypedFile('skills.json', isSkills, EMPTY_SKILLS),
+    goals: readTypedFile('goals.json', isGoals, EMPTY_GOALS),
+    preferences: readTypedFile('preferences.json', isPreferences, EMPTY_PREFERENCES),
   };
 }
 

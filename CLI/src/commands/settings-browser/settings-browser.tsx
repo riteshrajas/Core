@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react'
-import { Text, Box } from 'ink'
+import { Text, Box, useInput } from 'ink'
 import type { LocalJSXCommandCall } from '../../types/command.js'
 import { settingsManager } from '../../services/settingsManager.js'
 
 const SettingsBrowserComponent: React.FC<{
   search?: string
-  onDone: (result?: string) => void
+  onDone: (result?: string, options?: { display?: 'skip' | 'system' | 'user' }) => void
 }> = ({ search, onDone }) => {
   const [settings, setSettings] = useState<Record<string, any>>({})
   const [currentProfile, setCurrentProfile] = useState<string>('')
   const [loading, setLoading] = useState(true)
+
+  useInput((input, key) => {
+    if (key.escape || key.return || (key.ctrl && input === 'c')) {
+      onDone(undefined, { display: 'skip' })
+    }
+  })
 
   useEffect(() => {
     ;(async () => {
@@ -38,35 +44,43 @@ const SettingsBrowserComponent: React.FC<{
 
   if (Object.keys(settings).length === 0) {
     return (
-      <Box flexDirection="column">
+      <Box flexDirection="column" padding={1} borderStyle="round">
         <Text>No settings found{search ? ` matching "${search}"` : ''}</Text>
+        <Text dimColor marginTop={1}>Press Enter or Esc to exit</Text>
       </Box>
     )
   }
 
   return (
-    <Box flexDirection="column">
-      <Text bold>Profile: {currentProfile}</Text>
+    <Box flexDirection="column" padding={1} borderStyle="round">
+      <Box marginBottom={1}>
+        <Text bold underline>Settings Browser - Profile: {currentProfile}</Text>
+      </Box>
       {search && (
-        <Text dimColor>
-          Search: {search} ({Object.keys(settings).length} results)
-        </Text>
+        <Box marginBottom={1}>
+          <Text dimColor>
+            Search: <Text color="yellow">{search}</Text> ({Object.keys(settings).length} results)
+          </Text>
+        </Box>
       )}
-      <Text>{'\n'}</Text>
-      <Text bold>Settings:</Text>
       {Object.entries(settings).map(([key, value]) => (
         <Box key={key} flexDirection="column" marginLeft={2} marginBottom={1}>
           <Text>
-            <Text color="cyan">{key}</Text>
+            <Text color="cyan" bold>{key}</Text>
           </Text>
-          <Text dimColor>
-            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-          </Text>
+          <Box marginLeft={2}>
+            <Text dimColor>
+              {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+            </Text>
+          </Box>
         </Box>
       ))}
-      <Text dimColor>
-        {'\n'}Total: {Object.keys(settings).length} settings in profile "{currentProfile}"
-      </Text>
+      <Box marginTop={1} borderStyle="single" borderTop={true} borderBottom={false} borderLeft={false} borderRight={false} paddingTop={1}>
+        <Text dimColor>
+          Total: {Object.keys(settings).length} settings in profile "{currentProfile}"
+        </Text>
+        <Text marginLeft={2} dimColor italic>(Press Enter or Esc to exit)</Text>
+      </Box>
     </Box>
   )
 }
@@ -74,8 +88,6 @@ const SettingsBrowserComponent: React.FC<{
 export const call: LocalJSXCommandCall = async (onDone, context, args) => {
   const searchMatch = args.match(/--search\s+(\S+)/)
   const search = searchMatch ? searchMatch[1] : undefined
-
-  onDone(undefined, { display: 'skip' })
 
   return <SettingsBrowserComponent search={search} onDone={onDone} />
 }
