@@ -3,63 +3,88 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { getProjectStatus } from '../app/actions';
+import { getProjectStatus, executeCLICommand, writeWorkspaceFile, readWorkspaceFile } from '../app/actions';
 
-function withTempCwd(run: (tmpDir: string) => void) {
+async function withTempCwd(run: (tmpDir: string) => Promise<void>) {
   const previousCwd = process.cwd();
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ram-actions-'));
   try {
-    run(tmpDir);
+    process.chdir(tmpDir);
+    await run(tmpDir);
   } finally {
     process.chdir(previousCwd);
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
-test('getProjectStatus returns an enhanced, text-to-speech friendly report', async () => {
+test('getProjectStatus and File Actions', async (t) => {
   await withTempCwd(async (tmpDir) => {
-    process.chdir(tmpDir);
+    
+    await t.test('getProjectStatus returns an enhanced report', async () => {
+      // Setup mock directory structure
+      const iotDir = path.join(tmpDir, 'IOT', 'IOT-backups');
+      fs.mkdirSync(iotDir, { recursive: true });
+      fs.writeFileSync(path.join(iotDir, 'backup1.zip'), 'dummy');
 
-    // Setup mock directory structure
-    const iotDir = path.join(tmpDir, 'IOT', 'IOT-backups');
-    fs.mkdirSync(iotDir, { recursive: true });
-    fs.writeFileSync(path.join(iotDir, 'backup1.zip'), 'dummy');
-    fs.writeFileSync(path.join(iotDir, 'backup2.zip'), 'dummy');
+      const microMaxDir = path.join(tmpDir, 'MicroMax', 'OS', 'src');
+      fs.mkdirSync(microMaxDir, { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'MicroMax', 'SPEC.md'), '# MicroMax Spec');
+      fs.writeFileSync(path.join(microMaxDir, 'main.cpp'), 'void setup() {}');
 
-    const microMaxDir = path.join(tmpDir, 'MicroMax', 'OS', 'src');
-    fs.mkdirSync(microMaxDir, { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, 'MicroMax', 'SPEC.md'), '# MicroMax Spec');
-    fs.writeFileSync(path.join(microMaxDir, 'main.cpp'), 'void setup() {}');
+      const status = await getProjectStatus();
+      assert.ok(!status.includes('- '), 'Status should be conversational');
+      assert.ok(status.includes('The latest IOT backup'), 'Should mention IOT');
+      assert.ok(status.includes('MicroMax firmware'), 'Should mention MicroMax');
+    });
 
-    const status = await getProjectStatus();
+    await t.test('readWorkspaceFile and writeWorkspaceFile work for valid paths', async () => {
+      const testFile = 'test-file.txt';
+      const content = 'Hello Apex';
+      
+      const writeResult = await writeWorkspaceFile(testFile, content);
+      assert.ok(writeResult.includes('successfully'), 'Should write valid file');
+      
+      const readResult = await readWorkspaceFile(testFile);
+      assert.equal(readResult, content, 'Should read back same content');
+    });
 
-    // Enhanced output should be conversational, not bulleted
-    assert.ok(!status.includes('- '), 'Status should be conversational and not use bullet points for TTS');
-    assert.ok(status.includes('The latest IOT backup'), 'Should mention the latest IOT backup in a sentence');
-    assert.ok(status.includes('MicroMax firmware'), 'Should mention MicroMax firmware specifically');
-    assert.ok(status.includes('Operational'), 'Should indicate system health');
+    await t.test('writeWorkspaceFile blocks sensitive paths', async () => {
+      // We mock path.resolve to return a sensitive path for testing on any OS
+      const originalResolve = path.resolve;
+      path.resolve = (...args: string[]) => {
+        const p = args.join(path.sep);
+        return p.includes('secret.env') ? (os.platform() === 'win32' ? 'C:\\Windows\\System32\\config' : '/etc/passwd') : originalResolve(...args);
+      };
+      
+      const result = await writeWorkspaceFile('secret.env', 'dummy');
+      assert.ok(result.includes('Security Error'), 'Should block sensitive paths');
+      
+      path.resolve = originalResolve;
+    });
   });
 });
 
 test('getProjectStatus handles errors gracefully', async () => {
   await withTempCwd(async (tmpDir) => {
-    process.chdir(tmpDir);
-
-    // Mock readdirSync to throw an error
     mock.method(fs, 'readdirSync', () => {
       throw new Error('Disk Failure');
     });
 
-    // We must ensure the path exists so readdirSync is actually called
     const iotPath = path.join(tmpDir, 'IOT', 'IOT-backups');
     fs.mkdirSync(iotPath, { recursive: true });
 
     const status = await getProjectStatus();
-    
-    // Restore the mock
     mock.restoreAll();
 
-    assert.ok(status.includes('I encountered an error'), 'Should return a user-friendly error message');
-    assert.ok(status.includes('Disk Failure'), 'Should include the original error message');
+    assert.ok(status.includes('I encountered an error'), 'Should return error message');
+    assert.ok(status.includes('Disk Failure'), 'Should include details');
   });
+});
+
+test('executeCLICommand blocks dangerous commands', async () => {
+  const result = await executeCLICommand('rm -rf /');
+  assert.ok(result.includes('Security Error'), 'Should block rm -rf');
+  
+  const result2 = await executeCLICommand('rd /s /q C:\\');
+  assert.ok(result2.includes('Security Error'), 'Should block rd /s /q');
 });

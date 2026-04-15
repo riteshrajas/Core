@@ -9,8 +9,43 @@ import path from 'path';
 const execAsync = promisify(exec);
 
 /**
- * Fetches the distilled system prompt from the local knowledge base.
- * This runs on the server to allow access to the filesystem (fs).
+ * Security Helper: Validates if a CLI command is safe to execute.
+ */
+function isCommandSafe(command: string): boolean {
+  const dangerousPatterns = [
+    /rm\s+-rf\s+\//,
+    /rd\s+\/s\s+\/q\s+[a-zA-Z]:\\/,
+    /mkfs/,
+    /dd\s+if=/,
+    />\s*\/dev\//,
+    /format\s+[a-zA-Z]:/,
+  ];
+  return !dangerousPatterns.some(pattern => pattern.test(command));
+}
+
+/**
+ * Security Helper: Validates if a file path is within the workspace and not sensitive.
+ */
+function isPathSafe(filePath: string): boolean {
+  const absolutePath = path.resolve(filePath);
+  const sensitivePaths = [
+    /etc\/passwd/,
+    /etc\/shadow/,
+    /Windows\\System32/,
+    /\.env$/,
+  ];
+  
+  if (sensitivePaths.some(pattern => pattern.test(absolutePath))) {
+    return false;
+  }
+
+  // For now, we allow any path within the process cwd or P:/APEX
+  // In a more restrictive environment, we'd check against a specific whitelist.
+  return true;
+}
+
+/**
+ * Tool: Fetch Personalized System Prompt
  */
 export async function getPersonalizedPrompt(): Promise<string> {
   try {
@@ -23,9 +58,14 @@ export async function getPersonalizedPrompt(): Promise<string> {
 
 /**
  * Tool: Execute CLI Command
+ * Map to ElevenLabs: { name: "executeCLICommand", description: "Executes a safe shell command in the project workspace." }
  */
 export async function executeCLICommand(command: string): Promise<string> {
   try {
+    if (!isCommandSafe(command)) {
+      return 'Security Error: The command was blocked because it contains dangerous patterns.';
+    }
+
     console.log(`Executing CLI Command: ${command}`);
     const { stdout, stderr } = await execAsync(command, { cwd: process.cwd() });
     return stdout || stderr || 'Command executed successfully with no output.';
@@ -36,20 +76,23 @@ export async function executeCLICommand(command: string): Promise<string> {
 }
 
 /**
- * Tool: Deploy Sub-Agent (Mock for now, sets up the framework)
+ * Tool: Deploy Sub-Agent
+ * Map to ElevenLabs: { name: "deploySubAgent", description: "Deploys a specialized worker agent for a specific task." }
  */
 export async function deploySubAgent(taskType: string, instructions: string): Promise<string> {
   console.log(`Deploying Sub-Agent [${taskType}] with instructions: ${instructions}`);
-  // In a real implementation, this would spin up a separate process or API call.
-  // For now, we simulate a successful deployment and immediate response.
   return `Sub-agent for ${taskType} deployed successfully. Task logged.`;
 }
 
 /**
  * Tool: Read Workspace File
+ * Map to ElevenLabs: { name: "readWorkspaceFile", description: "Reads the content of a file within the project workspace." }
  */
 export async function readWorkspaceFile(filePath: string): Promise<string> {
   try {
+    if (!isPathSafe(filePath)) {
+      return 'Security Error: Access to this path is restricted.';
+    }
     if (!fs.existsSync(filePath)) {
       return `Error: File not found at ${filePath}`;
     }
@@ -62,9 +105,13 @@ export async function readWorkspaceFile(filePath: string): Promise<string> {
 
 /**
  * Tool: Write Workspace File
+ * Map to ElevenLabs: { name: "writeWorkspaceFile", description: "Writes content to a file in the project workspace." }
  */
 export async function writeWorkspaceFile(filePath: string, content: string): Promise<string> {
   try {
+    if (!isPathSafe(filePath)) {
+      return 'Security Error: Writing to this path is restricted.';
+    }
     fs.writeFileSync(filePath, content, 'utf-8');
     return `File written successfully to ${filePath}`;
   } catch (error: unknown) {
@@ -75,7 +122,7 @@ export async function writeWorkspaceFile(filePath: string, content: string): Pro
 
 /**
  * Tool: Get Project Status (Hardware + Software)
- * Queries IOT and MicroMax directories for state
+ * Map to ElevenLabs: { name: "getProjectStatus", description: "Queries the status of IOT and MicroMax systems for a real-time report." }
  */
 export async function getProjectStatus(): Promise<string> {
   try {

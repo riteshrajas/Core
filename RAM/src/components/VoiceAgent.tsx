@@ -107,8 +107,9 @@ export default function VoiceAgent() {
         }
       });
 
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Check Mic Permissions.');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setErrorMessage(message || 'Check Mic Permissions.');
       setIsConnecting(false);
     }
   }, [conversation, addLog]);
