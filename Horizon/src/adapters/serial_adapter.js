@@ -1,9 +1,12 @@
-import { TransportAdapter } from './TransportAdapter.js';
+import { TransportAdapter } from './transport_adapter.js';
 
 /**
  * Web Serial Adapter for Apex MicroMax nodes.
  */
 export class SerialAdapter extends TransportAdapter {
+  /**
+   * Initializes a new SerialAdapter.
+   */
   constructor() {
     super();
     this.port = null;
@@ -12,9 +15,13 @@ export class SerialAdapter extends TransportAdapter {
     this.keepReading = false;
   }
 
-  async connect(endpoint) {
+  /**
+   * Connects to a Web Serial port.
+   * @return {Promise<void>}
+   */
+  async connect() {
     if (!('serial' in navigator)) {
-      throw new Error("Web Serial API not supported by this browser.");
+      throw new Error('Web Serial API not supported by this browser.');
     }
 
     try {
@@ -31,65 +38,85 @@ export class SerialAdapter extends TransportAdapter {
       this.writer = textEncoder.writable.getWriter();
 
       this.keepReading = true;
-      this.readLoop();
+      void this.readLoop();
       this.emitStatus('connected');
-    } catch (e) {
-      console.error("Serial Connection Failed:", e);
+    } catch (error) {
       this.emitStatus('error');
-      throw e;
+      throw error;
     }
   }
 
+  /**
+   * Disconnects from the serial port.
+   * @return {Promise<void>}
+   */
   async disconnect() {
     this.keepReading = false;
+
     if (this.reader) {
       await this.reader.cancel();
       this.reader = null;
     }
+
     if (this.writer) {
       await this.writer.close();
       this.writer = null;
     }
+
     if (this.port) {
       await this.port.close();
       this.port = null;
     }
+
     this.emitStatus('disconnected');
   }
 
+  /**
+   * Sends a JSON payload.
+   * @param {Object} payload The data to send.
+   * @return {Promise<void>}
+   */
   async send(payload) {
-    if (!this.writer) throw new Error("Not connected.");
-    const msg = JSON.stringify(payload) + "\n";
-    await this.writer.write(msg);
+    if (!this.writer) {
+      throw new Error('Not connected.');
+    }
+
+    await this.writer.write(`${JSON.stringify(payload)}\n`);
   }
 
+  /**
+   * Reads data from the port in a loop.
+   */
   async readLoop() {
-    let buffer = "";
+    let buffer = '';
+
     while (this.keepReading) {
       try {
         const { value, done } = await this.reader.read();
-        if (done) break;
-        
-        buffer += value;
-        const lines = buffer.split("\n");
-        buffer = lines.pop(); // Keep partial line in buffer
-
-        for (const line of lines) {
-          if (line.trim()) {
-            try {
-              const data = JSON.parse(line);
-              this.emitData(data);
-            } catch (e) {
-              console.warn("Malformed JSON received via Serial:", line);
-            }
-          }
-        }
-      } catch (e) {
-        if (this.keepReading) {
-          console.error("Serial Read Error:", e);
-          this.emitStatus('error');
+        if (done) {
           break;
         }
+
+        buffer += value;
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.trim()) {
+            continue;
+          }
+
+          try {
+            this.emitData(JSON.parse(line));
+          } catch {
+            console.warn('Malformed JSON received via Serial:', line);
+          }
+        }
+      } catch {
+        if (this.keepReading) {
+          this.emitStatus('error');
+        }
+        break;
       }
     }
   }
