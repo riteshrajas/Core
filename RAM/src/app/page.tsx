@@ -2,6 +2,7 @@
 
 import VoiceAgent from '@/components/VoiceAgent';
 import { ConversationProvider } from '@elevenlabs/react';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -25,6 +26,14 @@ export default function Home() {
           <p className="text-slate-400 text-lg md:text-xl max-w-lg mx-auto font-medium">
             Your intelligent, voice-first orchestrator. Awaiting commands.
           </p>
+          <div>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-indigo-200 transition hover:border-indigo-300/50 hover:bg-indigo-500/20"
+            >
+              Open Visual Dashboard
+            </Link>
+          </div>
         </header>
 
         <section className="w-full max-w-md">

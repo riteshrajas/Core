@@ -18,6 +18,9 @@ import { jsonParse, jsonStringify } from './utils/slowOperations.js'
 
 const MAX_HISTORY_ITEMS = 100
 const MAX_PASTED_CONTENT_LENGTH = 1024
+const MAX_STREAM_BACKLOG = 100
+const DEFAULT_RAM_INGESTION_WS_URL =
+  'ws://127.0.0.1:4174/api/ingestion/cli-stream'
 
 /**
  * Stored paste content - either inline content or a hash reference to paste store.
@@ -224,6 +227,15 @@ type LogEntry = {
   sessionId?: string
 }
 
+type CLIHistoryStreamEvent = {
+  type: 'cli.command_history'
+  source: 'core-cli'
+  project: string
+  sessionId: string
+  command: string
+  timestamp: string
+}
+
 /**
  * Resolve stored paste content to full PastedContent by fetching from paste store if needed.
  */
@@ -287,6 +299,171 @@ let lastAddedEntry: LogEntry | null = null
 // reading. Used by removeLastFromHistory when the entry has raced past the
 // pending buffer. Session-scoped (module state resets on process restart).
 const skippedTimestamps = new Set<number>()
+let historyStreamSocket:
+  | (globalThis.WebSocket & {
+      on?: (event: string, callback: (...args: unknown[]) => void) => void
+      off?: (event: string, callback: (...args: unknown[]) => void) => void
+    })
+  | null = null
+let streamConnectionPromise: Promise<void> | null = null
+let pendingStreamPayloads: string[] = []
+
+function getRAMIngestionWsUrl(): string | null {
+  if (isEnvTruthy(process.env.APEX_RAM_DISABLE_INGESTION_STREAM)) {
+    return null
+  }
+  return (
+    process.env.APEX_RAM_INGESTION_WS_URL?.trim() || DEFAULT_RAM_INGESTION_WS_URL
+  )
+}
+
+function streamSocketIsOpen(
+  socket: globalThis.WebSocket | null,
+): socket is globalThis.WebSocket {
+  if (!socket) return false
+  return socket.readyState === 1
+}
+
+function enqueueStreamPayload(payload: string): void {
+  pendingStreamPayloads.push(payload)
+  if (pendingStreamPayloads.length > MAX_STREAM_BACKLOG) {
+    pendingStreamPayloads = pendingStreamPayloads.slice(-MAX_STREAM_BACKLOG)
+  }
+}
+
+function clearHistoryStreamSocket(
+  socket:
+    | (globalThis.WebSocket & {
+        on?: (event: string, callback: (...args: unknown[]) => void) => void
+      })
+    | null = historyStreamSocket,
+): void {
+  if (socket && socket === historyStreamSocket) {
+    historyStreamSocket = null
+  }
+}
+
+function flushHistoryStreamBacklog(): void {
+  if (!streamSocketIsOpen(historyStreamSocket)) {
+    return
+  }
+
+  while (pendingStreamPayloads.length > 0) {
+    const payload = pendingStreamPayloads.shift()
+    if (!payload) {
+      continue
+    }
+    try {
+      historyStreamSocket.send(payload)
+    } catch (error) {
+      logForDebugging(`Failed to stream history payload: ${error}`)
+      pendingStreamPayloads.unshift(payload)
+      clearHistoryStreamSocket()
+      return
+    }
+  }
+}
+
+function attachHistoryStreamListeners(
+  socket: globalThis.WebSocket & {
+    on?: (event: string, callback: (...args: unknown[]) => void) => void
+  },
+): void {
+  if (typeof socket.addEventListener === 'function') {
+    socket.addEventListener('open', () => flushHistoryStreamBacklog())
+    socket.addEventListener('error', () =>
+      logForDebugging('History stream socket error'),
+    )
+    socket.addEventListener('close', () => clearHistoryStreamSocket(socket))
+    return
+  }
+
+  socket.on?.('open', () => flushHistoryStreamBacklog())
+  socket.on?.('error', error =>
+    logForDebugging(`History stream socket error: ${error}`),
+  )
+  socket.on?.('close', () => clearHistoryStreamSocket(socket))
+}
+
+async function ensureHistoryStreamConnection(): Promise<void> {
+  if (streamSocketIsOpen(historyStreamSocket)) {
+    return
+  }
+  if (streamConnectionPromise) {
+    return streamConnectionPromise
+  }
+
+  const url = getRAMIngestionWsUrl()
+  if (!url) {
+    return
+  }
+
+  streamConnectionPromise = (async () => {
+    try {
+      let socket:
+        | (globalThis.WebSocket & {
+            on?: (event: string, callback: (...args: unknown[]) => void) => void
+          })
+        | null = null
+      if (typeof Bun !== 'undefined' || typeof globalThis.WebSocket === 'function') {
+        socket = new globalThis.WebSocket(url) as globalThis.WebSocket & {
+          on?: (event: string, callback: (...args: unknown[]) => void) => void
+        }
+      } else {
+        const wsModule = (await import('ws')) as {
+          default: new (url: string) => globalThis.WebSocket & {
+            on?: (event: string, callback: (...args: unknown[]) => void) => void
+          }
+        }
+        socket = new wsModule.default(url)
+      }
+      historyStreamSocket = socket
+      attachHistoryStreamListeners(socket)
+      flushHistoryStreamBacklog()
+    } catch (error) {
+      logForDebugging(`Failed to connect RAM ingestion stream: ${error}`)
+      clearHistoryStreamSocket()
+    } finally {
+      streamConnectionPromise = null
+    }
+  })()
+
+  return streamConnectionPromise
+}
+
+function closeHistoryStream(): void {
+  if (!historyStreamSocket) {
+    return
+  }
+  try {
+    historyStreamSocket.close()
+  } catch (error) {
+    logForDebugging(`Failed to close history stream: ${error}`)
+  } finally {
+    clearHistoryStreamSocket()
+  }
+}
+
+function buildCLIHistoryStreamEvent(logEntry: LogEntry): CLIHistoryStreamEvent {
+  return {
+    type: 'cli.command_history',
+    source: 'core-cli',
+    project: logEntry.project,
+    sessionId: logEntry.sessionId ?? getSessionId(),
+    command: logEntry.display,
+    timestamp: new Date(logEntry.timestamp).toISOString(),
+  }
+}
+
+function streamHistoryEntry(logEntry: LogEntry): void {
+  const url = getRAMIngestionWsUrl()
+  if (!url) {
+    return
+  }
+
+  enqueueStreamPayload(jsonStringify(buildCLIHistoryStreamEvent(logEntry)))
+  void ensureHistoryStreamConnection().then(() => flushHistoryStreamBacklog())
+}
 
 // Core flush logic - writes pending entries to disk
 async function immediateFlushHistory(): Promise<void> {
@@ -403,6 +580,7 @@ async function addToPromptHistory(
   }
 
   pendingEntries.push(logEntry)
+  streamHistoryEntry(logEntry)
   lastAddedEntry = logEntry
   currentFlushPromise = flushPromptHistory(0)
   void currentFlushPromise
@@ -427,6 +605,7 @@ export function addToHistory(command: HistoryEntry | string): void {
       if (pendingEntries.length > 0) {
         await immediateFlushHistory()
       }
+      closeHistoryStream()
     })
   }
 

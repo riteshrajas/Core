@@ -22,6 +22,7 @@ Core RAM is the Next.js dashboard + knowledge-base layer used by APEX for realti
 ```text
 Core/RAM/
 ├── src/app/             # App router pages and server actions
+├── src/api/             # Ingestion and streaming pipeline modules
 ├── src/components/      # UI components
 ├── src/knowledge-base/  # Knowledge-base data and loaders
 └── src/lib/             # Shared logic and tests

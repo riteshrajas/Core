@@ -229,7 +229,10 @@ import { getLocalISODate } from '../constants/common.js'
 import { getPDFPageCount } from './pdf.js'
 import { PDF_AT_MENTION_INLINE_THRESHOLD } from '../constants/apiLimits.js'
 import { isAgentSwarmsEnabled } from './agentSwarmsEnabled.js'
-import { findRelevantMemories } from '../memdir/findRelevantMemories.js'
+import {
+  searchMemorySemantically,
+  selectTopRagMatches,
+} from '../tools/SearchMemoryTool/semanticSearch.js'
 import { memoryAge, memoryFreshnessText } from '../memdir/memoryAge.js'
 import { getAutoMemPath, isAutoMemoryEnabled } from '../memdir/paths.js'
 import { getAgentMemoryDir } from '../tools/AgentTool/agentMemory.js'
@@ -267,10 +270,10 @@ export const AUTO_MODE_ATTACHMENT_CONFIG = {
 } as const
 
 const MAX_MEMORY_LINES = 200
-// Line cap alone doesn't bound size (200 × 500-char lines = 100KB).  The
-// surfacer injects up to 5 files per turn via <system-reminder>, bypassing
+// Line cap alone doesn't bound size (200 × 500-char lines = 100KB). The
+// surfacer injects up to 3 snippets per turn via <system-reminder>, bypassing
 // the per-message tool-result budget, so a tight per-file byte cap keeps
-// aggregate injection bounded (5 × 4KB = 20KB/turn).  Enforced via
+// aggregate injection bounded. Enforced via
 // readFileInRange's truncateOnByteLimit option.  Truncation means the
 // most-relevant memory still surfaces: the frontmatter + opening context
 // is usually what matters.
@@ -2197,7 +2200,7 @@ async function getRelevantMemoryAttachments(
   input: string,
   agents: AgentDefinition[],
   readFileState: FileStateCache,
-  recentTools: readonly string[],
+  _recentTools: readonly string[],
   signal: AbortSignal,
   alreadySurfaced: ReadonlySet<string>,
 ): Promise<Attachment[]> {
@@ -2214,24 +2217,20 @@ async function getRelevantMemoryAttachments(
 
   const allResults = await Promise.all(
     dirs.map(dir =>
-      findRelevantMemories(
-        input,
-        dir,
+      searchMemorySemantically({
+        query: input,
+        memoryDir: dir,
+        topK: 8,
         signal,
-        recentTools,
-        alreadySurfaced,
-      ).catch(() => []),
+      }).catch(() => ({ decryptedQueries: [], matches: [] })),
     ),
   )
-  // alreadySurfaced is filtered inside the selector so Sonnet spends its
-  // 5-slot budget on fresh candidates; readFileState catches files the
-  // model read via FileReadTool. The redundant alreadySurfaced check here
-  // is a belt-and-suspenders guard (multi-dir results may re-introduce a
-  // path the selector filtered in a different dir).
-  const selected = allResults
-    .flat()
-    .filter(m => !readFileState.has(m.path) && !alreadySurfaced.has(m.path))
-    .slice(0, 5)
+  const selected = selectTopRagMatches(
+    allResults
+      .flatMap(result => result.matches)
+      .filter(m => !readFileState.has(m.path) && !alreadySurfaced.has(m.path)),
+    3,
+  )
 
   const memories = await readMemoriesForSurfacing(selected, signal)
 
@@ -2266,18 +2265,18 @@ export function collectSurfacedMemories(messages: ReadonlyArray<Message>): {
 }
 
 /**
- * Reads a set of relevance-ranked memory files for injection as
- * <system-reminder> attachments. Enforces both MAX_MEMORY_LINES and
- * MAX_MEMORY_BYTES via readFileInRange's truncateOnByteLimit option.
- * Truncation surfaces partial
- * content with a note rather than dropping the file — findRelevantMemories
- * already picked this as most-relevant, so the frontmatter + opening context
- * is worth surfacing even if later lines are cut.
+ * Reads or materializes relevance-ranked memory snippets for injection as
+ * <system-reminder> attachments. If a semantic snippet is already available,
+ * it is used directly; otherwise this falls back to bounded file reads.
  *
- * Exported for direct testing without mocking the ranker + GB gates.
+ * Exported for direct testing without mocking ranking + gate behavior.
  */
 export async function readMemoriesForSurfacing(
-  selected: ReadonlyArray<{ path: string; mtimeMs: number }>,
+  selected: ReadonlyArray<{
+    path: string
+    mtimeMs: number
+    snippet?: string
+  }>,
   signal?: AbortSignal,
 ): Promise<
   Array<{
@@ -2289,8 +2288,23 @@ export async function readMemoriesForSurfacing(
   }>
 > {
   const results = await Promise.all(
-    selected.map(async ({ path: filePath, mtimeMs }) => {
+    selected.map(async ({ path: filePath, mtimeMs, snippet }) => {
       try {
+        if (snippet && snippet.trim().length > 0) {
+          const clipped =
+            snippet.length > MAX_MEMORY_BYTES
+              ? snippet.slice(0, MAX_MEMORY_BYTES) +
+                `\n\n> This memory snippet was truncated to ${MAX_MEMORY_BYTES} bytes. Use the ${FILE_READ_TOOL_NAME} tool to inspect: ${filePath}`
+              : snippet
+          return {
+            path: filePath,
+            content: clipped,
+            mtimeMs,
+            header: memoryHeader(filePath, mtimeMs),
+            limit: undefined,
+          }
+        }
+
         const result = await readFileInRange(
           filePath,
           0,
