@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { getProjectStatus, executeCLICommand, writeWorkspaceFile, readWorkspaceFile } from '../app/actions';
+import { getProjectStatus, executeCLICommand, writeWorkspaceFile, readWorkspaceFile, deploySubAgent } from '../app/actions';
 
 async function withTempCwd(run: (tmpDir: string) => Promise<void>) {
   const previousCwd = process.cwd();
@@ -87,4 +87,24 @@ test('executeCLICommand blocks dangerous commands', async () => {
   
   const result2 = await executeCLICommand('rd /s /q C:\\');
   assert.ok(result2.includes('Security Error'), 'Should block rd /s /q');
+});
+
+test('deploySubAgent updates Task Registry', async () => {
+  await withTempCwd(async (tmpDir) => {
+    const taskType = 'Testing';
+    const instructions = 'Run automated tests';
+    
+    const result = await deploySubAgent(taskType, instructions);
+    assert.ok(result.includes('successfully'), 'Should return success message');
+    
+    const registryPath = path.join(tmpDir, 'tasks.json');
+    assert.ok(fs.existsSync(registryPath), 'Task Registry file should be created');
+    
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+    assert.ok(Array.isArray(registry.tasks), 'Registry should contain a tasks array');
+    const task = registry.tasks.find((t: { type: string }) => t.type === taskType);
+    assert.ok(task, 'Deployed task should be in the registry');
+    assert.equal(task.instructions, instructions, 'Task instructions should match');
+    assert.equal(task.status, 'deployed', 'Initial status should be deployed');
+  });
 });

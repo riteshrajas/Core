@@ -8,6 +8,18 @@ import path from 'path';
 
 const execAsync = promisify(exec);
 
+interface TaskEntry {
+  id: string;
+  type: string;
+  instructions: string;
+  status: string;
+  timestamp: string;
+}
+
+interface TaskRegistry {
+  tasks: TaskEntry[];
+}
+
 /**
  * Security Helper: Validates if a CLI command is safe to execute.
  */
@@ -39,8 +51,6 @@ function isPathSafe(filePath: string): boolean {
     return false;
   }
 
-  // For now, we allow any path within the process cwd or P:/APEX
-  // In a more restrictive environment, we'd check against a specific whitelist.
   return true;
 }
 
@@ -77,11 +87,39 @@ export async function executeCLICommand(command: string): Promise<string> {
 
 /**
  * Tool: Deploy Sub-Agent
- * Map to ElevenLabs: { name: "deploySubAgent", description: "Deploys a specialized worker agent for a specific task." }
+ * Map to ElevenLabs: { name: "deploySubAgent", description: "Deploys a specialized worker agent for a specific task. Progress is tracked in tasks.json." }
  */
 export async function deploySubAgent(taskType: string, instructions: string): Promise<string> {
-  console.log(`Deploying Sub-Agent [${taskType}] with instructions: ${instructions}`);
-  return `Sub-agent for ${taskType} deployed successfully. Task logged.`;
+  try {
+    const registryPath = path.join(process.cwd(), 'tasks.json');
+    let registry: TaskRegistry = { tasks: [] };
+    
+    if (fs.existsSync(registryPath)) {
+      try {
+        registry = JSON.parse(fs.readFileSync(registryPath, 'utf-8'));
+      } catch {
+        console.warn('Failed to parse existing tasks.json, resetting.');
+      }
+    }
+    
+    const newTask: TaskEntry = {
+      id: Date.now().toString(),
+      type: taskType,
+      instructions: instructions,
+      status: 'deployed',
+      timestamp: new Date().toISOString()
+    };
+    
+    registry.tasks.push(newTask);
+    
+    fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf-8');
+    
+    console.log(`Deploying Sub-Agent [${taskType}] with instructions: ${instructions}`);
+    return `Sub-agent for ${taskType} deployed successfully. Task logged in registry.`;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return `Error deploying sub-agent: ${message}`;
+  }
 }
 
 /**
