@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { getProjectStatus, executeCLICommand, writeWorkspaceFile, readWorkspaceFile, deploySubAgent } from '../app/actions';
+import { getProjectStatus, executeCLICommand, writeWorkspaceFile, readWorkspaceFile, deploySubAgent, checkSystemAlerts } from '../app/actions';
 
 async function withTempCwd(run: (tmpDir: string) => Promise<void>) {
   const previousCwd = process.cwd();
@@ -106,5 +106,25 @@ test('deploySubAgent updates Task Registry', async () => {
     assert.ok(task, 'Deployed task should be in the registry');
     assert.equal(task.instructions, instructions, 'Task instructions should match');
     assert.equal(task.status, 'deployed', 'Initial status should be deployed');
+  });
+});
+
+test('checkSystemAlerts detects active alerts', async () => {
+  await withTempCwd(async (tmpDir) => {
+    // Test case: No alerts
+    const noAlertsResult = await checkSystemAlerts();
+    assert.equal(noAlertsResult, '', 'Should return empty string when no alerts exist');
+    
+    // Test case: Critical alert
+    const alertsPath = path.join(tmpDir, 'alerts.json');
+    fs.writeFileSync(alertsPath, JSON.stringify({
+      alerts: [
+        { id: '1', level: 'critical', message: 'Core Temperature High', timestamp: new Date().toISOString() }
+      ]
+    }));
+    
+    const alertResult = await checkSystemAlerts();
+    assert.ok(alertResult.includes('CRITICAL ALERT'), 'Should report critical alert');
+    assert.ok(alertResult.includes('Core Temperature High'), 'Should include alert message');
   });
 });

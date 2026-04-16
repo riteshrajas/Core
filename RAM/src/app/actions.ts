@@ -20,6 +20,17 @@ interface TaskRegistry {
   tasks: TaskEntry[];
 }
 
+interface AlertEntry {
+  id: string;
+  level: 'info' | 'warning' | 'critical';
+  message: string;
+  timestamp: string;
+}
+
+interface AlertRegistry {
+  alerts: AlertEntry[];
+}
+
 /**
  * Security Helper: Validates if a CLI command is safe to execute.
  */
@@ -200,5 +211,31 @@ The Core CLI is Operational, and storage is being managed via the local file sys
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return `I encountered an error while fetching the system status: ${message}`;
+  }
+}
+
+/**
+ * Tool: Check System Alerts
+ * Queries alerts.json for active critical events.
+ */
+export async function checkSystemAlerts(): Promise<string> {
+  try {
+    const alertsPath = path.join(process.cwd(), 'alerts.json');
+    if (!fs.existsSync(alertsPath)) {
+      return '';
+    }
+    
+    const registry: AlertRegistry = JSON.parse(fs.readFileSync(alertsPath, 'utf-8'));
+    const criticalAlerts = registry.alerts.filter(a => a.level === 'critical');
+    
+    if (criticalAlerts.length > 0) {
+      const topAlert = criticalAlerts[0];
+      return `CRITICAL ALERT DETECTED: ${topAlert.message}. Please address this immediately.`;
+    }
+    
+    return '';
+  } catch (error: unknown) {
+    console.error('Error checking alerts:', error);
+    return ''; // Silent failure for polling
   }
 }

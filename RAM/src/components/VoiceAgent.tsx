@@ -3,7 +3,7 @@
 import { useConversation } from '@elevenlabs/react';
 import { useCallback, useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Loader2, AlertCircle, Terminal, Zap } from 'lucide-react';
-import { getPersonalizedPrompt, executeCLICommand, deploySubAgent, readWorkspaceFile, writeWorkspaceFile, getProjectStatus } from '@/app/actions';
+import { getPersonalizedPrompt, executeCLICommand, deploySubAgent, readWorkspaceFile, writeWorkspaceFile, getProjectStatus, checkSystemAlerts } from '@/app/actions';
 import { performSync, SyncState } from '@/lib/sync-manager';
 
 export default function VoiceAgent() {
@@ -69,6 +69,25 @@ export default function VoiceAgent() {
       syncIdentity();
     }
   }, [status, syncIdentity]);
+
+  // Proactive Alert Polling
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (status === 'connected') {
+      interval = setInterval(async () => {
+        const alert = await checkSystemAlerts();
+        if (alert) {
+          addLog(`Proactive Alert: ${alert}`);
+          try {
+            await conversation.sendContextualUpdate(alert);
+          } catch (e) {
+            console.error('Failed to send proactive update:', e);
+          }
+        }
+      }, 30000); // Check every 30 seconds
+    }
+    return () => clearInterval(interval);
+  }, [status, conversation, addLog]);
 
   const startConversation = useCallback(async () => {
     try {
