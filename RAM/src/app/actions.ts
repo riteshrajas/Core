@@ -47,14 +47,18 @@ function isCommandSafe(command: string): boolean {
 }
 
 /**
- * Security Helper: Validates if a file path is within the workspace and not sensitive.
+ * Security Helper: Validates if a file path is within the workspace.
  */
 function isPathSafe(filePath: string): boolean {
+  const workspaceRoot = process.cwd();
   const absolutePath = path.resolve(filePath);
+  
+  // Basic workspace confinement check
+  if (!absolutePath.startsWith(workspaceRoot)) {
+    return false;
+  }
+
   const sensitivePaths = [
-    /etc\/passwd/,
-    /etc\/shadow/,
-    /Windows\\System32/,
     /\.env$/,
   ];
   
