@@ -110,6 +110,7 @@ export default function App() {
     presence: '-',
     signal: '-',
     battery: '-',
+    pins: {},
   });
 
   const adapterRef = useRef(null);
@@ -128,31 +129,38 @@ export default function App() {
   const updateTelemetryUI = useCallback((data) => {
     setTelemetry((prev) => {
       const next = { ...prev };
-      if (data.role !== undefined) {
-        next.role = String(data.role);
+      
+      // Handle ASP v2.0 nested data
+      const payload = data.data || data;
+
+      if (payload.role !== undefined) {
+        next.role = String(payload.role);
       }
-      if (data.uptime !== undefined) {
-        next.uptime = `${data.uptime}s`;
+      if (payload.uptime !== undefined) {
+        next.uptime = `${payload.uptime}s`;
       }
-      if (data.sensors) {
-        if (data.sensors.temp !== undefined) {
-          next.temp = `${data.sensors.temp} degC`;
+      if (payload.sensors) {
+        if (payload.sensors.temp !== undefined) {
+          next.temp = `${payload.sensors.temp} degC`;
         }
-        if (data.sensors.humidity !== undefined) {
-          next.humidity = `${data.sensors.humidity}%`;
+        if (payload.sensors.humidity !== undefined) {
+          next.humidity = `${payload.sensors.humidity}%`;
         }
-        if (data.sensors.lux !== undefined) {
-          next.lux = `${data.sensors.lux} lx`;
+        if (payload.sensors.lux !== undefined) {
+          next.lux = `${payload.sensors.lux} lx`;
         }
-        if (data.sensors.presence !== undefined) {
-          next.presence = data.sensors.presence ? 'DETECTED' : 'CLEAR';
+        if (payload.sensors.presence !== undefined) {
+          next.presence = payload.sensors.presence ? 'DETECTED' : 'CLEAR';
         }
       }
-      if (data.signal !== undefined) {
-        next.signal = `${data.signal} dBm`;
+      if (payload.signal !== undefined) {
+        next.signal = `${payload.signal} dBm`;
       }
-      if (data.battery !== undefined) {
-        next.battery = `${data.battery}%`;
+      if (payload.battery !== undefined) {
+        next.battery = `${payload.battery}%`;
+      }
+      if (payload.pins !== undefined) {
+        next.pins = { ...payload.pins };
       }
       return next;
     });
@@ -184,6 +192,8 @@ export default function App() {
       }
 
       const enrichedPayload = {
+        v: '2.0',
+        id: crypto.randomUUID(),
         ...payload,
         origin: 'HORIZON',
         timestamp: new Date().toISOString(),
@@ -720,6 +730,40 @@ export default function App() {
 
         <section className="card">
           <div className="card-head">
+            <h3>GPIO Visualization</h3>
+            <p className="muted-copy">Real-time status of configured node pins.</p>
+          </div>
+          <div className="inline-actions wrap" style={{ gap: '8px', padding: '12px 0' }}>
+            {Object.keys(telemetry.pins).length === 0 ? (
+              <p className="muted-copy">No pins configured or reported yet.</p>
+            ) : (
+              Object.entries(telemetry.pins).map(([pin, state]) => (
+                <div 
+                  key={pin} 
+                  className={`status-chip ${state ? 'ok' : ''}`}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <div style={{ 
+                    width: '8px', 
+                    height: '8px', 
+                    borderRadius: '50%', 
+                    backgroundColor: state ? '#4ade80' : '#94a3b8',
+                    boxShadow: state ? '0 0 8px #4ade80' : 'none'
+                  }} />
+                  {pin}
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="card">
+          <div className="card-head">
             <h3>Telemetry Feed</h3>
             <div className="inline-actions">
               <button
@@ -734,7 +778,7 @@ export default function App() {
           <div className="telemetry-grid">
             <div className="telemetry-cell">
               <span>Role</span>
-              <strong>{telemetry.role}</strong>
+              strong>{telemetry.role}</strong>
             </div>
             <div className="telemetry-cell">
               <span>Uptime</span>
