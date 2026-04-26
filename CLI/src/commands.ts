@@ -1,5 +1,6 @@
 // biome-ignore-all assist/source/organizeImports: ANT-ONLY import markers must not be reordered
 import addDir from './commands/add-dir/index.js'
+import attach from './commands/attach/index.js'
 import autofix from './commands/autofix.js'
 import autofixPr from './commands/autofix-pr/index.js'
 import backfillSessions from './commands/backfill-sessions/index.js'
@@ -26,8 +27,10 @@ import ide from './commands/ide/index.js'
 import init from './commands/init.js'
 import initVerifiers from './commands/init-verifiers.js'
 import keybindings from './commands/keybindings/index.js'
+import kill from './commands/kill/index.js'
 import login from './commands/login/index.js'
 import logout from './commands/logout/index.js'
+import logs from './commands/logs/index.js'
 import installGitHubApp from './commands/install-github-app/index.js'
 import installSlackApp from './commands/install-slack-app/index.js'
 import breakCache from './commands/break-cache/index.js'
@@ -39,6 +42,7 @@ import releaseNotes from './commands/release-notes/index.js'
 import rename from './commands/rename/index.js'
 import resume from './commands/resume/index.js'
 import review, { ultrareview } from './commands/review.js'
+import ps from './commands/ps/index.js'
 import session from './commands/session/index.js'
 import share from './commands/share/index.js'
 import skills from './commands/skills/index.js'
@@ -233,8 +237,6 @@ export const INTERNAL_ONLY_COMMANDS = [
   backfillSessions,
   breakCache,
   bughunter,
-  commit,
-  commitPushPr,
   ctx_viz,
   goodAPEX,
   issue,
@@ -242,7 +244,6 @@ export const INTERNAL_ONLY_COMMANDS = [
   ...(forceSnip ? [forceSnip] : []),
   mockLimits,
   bridgeKick,
-  version,
   ...(subscribePr ? [subscribePr] : []),
   resetLimits,
   resetLimitsNonInteractive,
@@ -267,8 +268,14 @@ const COMMANDS = memoize((): Command[] => [
   agents,
   aliasCmd,
   autofix,
+  commit,
+  commitPushPr,
   branch,
   btw,
+  ps,
+  logs,
+  attach,
+  kill,
   chrome,
   clear,
   color,
@@ -332,6 +339,7 @@ const COMMANDS = memoize((): Command[] => [
   securityReview,
   terminalSetup,
   upgrade,
+  version,
   extraUsage,
   extraUsageNonInteractive,
   rateLimitOptions,
@@ -355,7 +363,8 @@ const COMMANDS = memoize((): Command[] => [
   hooks,
   exportCommand,
   sandboxToggle,
-  ...(!isUsing3PServices() ? [logout, login()] : []),
+  logout,
+  login(),
   passes,
   ...(peersCmd ? [peersCmd] : []),
   tasks,
@@ -654,6 +663,10 @@ export const REMOTE_SAFE_COMMANDS: Set<Command> = new Set([
   plan, // Plan mode toggle
   keybindings, // Keybinding management
   statusline, // Status line toggle
+  ps, // List local background sessions
+  logs, // Show local background session logs
+  attach, // Attach guidance for local background sessions
+  kill, // Terminate local background sessions
   stickers, // Stickers
   mobile, // Mobile QR code
 ])

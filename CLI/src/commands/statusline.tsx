@@ -6,7 +6,7 @@ const statusline = {
   description: "Set up APEX Code's status line UI",
   contentLength: 0,
   // Dynamic content
-  aliases: [],
+  aliases: ['statusline-setup'],
   name: 'statusline',
   progressMessage: 'setting up statusLine',
   allowedTools: [AGENT_TOOL_NAME, 'Read(~/**)', 'Edit(~/.APEX/settings.json)'],
@@ -16,7 +16,7 @@ const statusline = {
     const prompt = args.trim() || 'Configure my statusLine from my shell PS1 configuration';
     return [{
       type: 'text',
-      text: `Create an ${AGENT_TOOL_NAME} with subagent_type "statusline-setup" and the prompt "${prompt}"`
+      text: `Create an ${AGENT_TOOL_NAME} with description "Configure status line" and subagent_type "statusline-setup", then pass this prompt exactly:\n\n${prompt}`
     }];
   }
 } satisfies Command;

@@ -2,20 +2,21 @@ import * as React from 'react'
 import type { LocalJSXCommandContext } from '../../commands.js'
 import { Box, Text } from '../../ink.js'
 import type { LocalJSXCommandOnDone } from '../../types/command.js'
-import { taskVisualizer, type VisualizationOptions, type AggregateProgress } from '../../services/taskVisualizer.js'
+import {
+  taskVisualizer,
+  type AggregateProgress,
+  type TaskNode as VisualTaskNode,
+} from '../../services/taskVisualizer.js'
 
-interface TaskDashboardProps {
-  context: LocalJSXCommandContext
-  onDone: LocalJSXCommandOnDone
-}
+type TaskStatus = VisualTaskNode['status']
 
-interface DashboardState {
-  viewMode: 'tree' | 'graph' | 'timeline' | 'json'
-  filterStatus?: string
-  showEta: boolean
-  showCriticalPath: boolean
-  refreshInterval: number
-}
+const VALID_STATUSES: readonly TaskStatus[] = [
+  'pending',
+  'in_progress',
+  'completed',
+  'failed',
+  'blocked',
+]
 
 function formatDuration(ms: number): string {
   if (!ms) return '0s'
@@ -28,18 +29,24 @@ function formatDuration(ms: number): string {
   return `${seconds}s`
 }
 
+function formatEtaTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString()
+}
+
 function ProgressBar({ progress, width = 20 }: { progress: number; width?: number }): React.ReactNode {
   const filled = Math.floor((progress / 100) * width)
   const empty = width - filled
   return `[${Array(filled + 1).join('=')}${Array(empty + 1).join(' ')}] ${progress.toFixed(0)}%`
 }
 
-function TaskNode({ id, name, progress, status, dependencies }: {
+function TaskRow({ id, name, progress, status, dependencies, showEta, estimatedEndTime }: {
   id: string
   name: string
   progress: number
   status: string
   dependencies: string[]
+  showEta: boolean
+  estimatedEndTime?: number
 }): React.ReactNode {
   const statusIcon = {
     pending: '○',
@@ -69,11 +76,16 @@ function TaskNode({ id, name, progress, status, dependencies }: {
           depends on: {dependencies.join(', ')}
         </Text>
       )}
+      {showEta && estimatedEndTime && (
+        <Text dimColor marginLeft={2} fontSize="small">
+          ETA: {formatEtaTime(estimatedEndTime)}
+        </Text>
+      )}
     </Box>
   )
 }
 
-function AggregateStats({ stats }: { stats: AggregateProgress }): React.ReactNode {
+function AggregateStats({ stats, showEta }: { stats: AggregateProgress; showEta: boolean }): React.ReactNode {
   return (
     <Box flexDirection="column" marginBottom={2} borderStyle="round" borderColor="gray" padding={1}>
       <Text bold>Overall Progress</Text>
@@ -89,7 +101,7 @@ function AggregateStats({ stats }: { stats: AggregateProgress }): React.ReactNod
           <Text dimColor>Failed: {stats.failedTasks}</Text>
         </Box>
       </Box>
-      {stats.estimatedTimeRemaining && (
+      {showEta && stats.estimatedTimeRemaining && (
         <Box marginTop={1}>
           <Text dimColor>
             ETA: {formatDuration(stats.estimatedTimeRemaining)}
@@ -98,6 +110,11 @@ function AggregateStats({ stats }: { stats: AggregateProgress }): React.ReactNod
       )}
     </Box>
   )
+}
+
+function filterTasks(tasks: VisualTaskNode[], filterStatus?: string): VisualTaskNode[] {
+  if (!filterStatus) return tasks
+  return tasks.filter((task) => task.status === filterStatus)
 }
 
 function CriticalPathView(): React.ReactNode {
@@ -126,9 +143,13 @@ function CriticalPathView(): React.ReactNode {
   )
 }
 
-function TreeView(): React.ReactNode {
-  const tasks = taskVisualizer.getExecutionOrder()
-
+function TreeView({
+  tasks,
+  showEta,
+}: {
+  tasks: VisualTaskNode[]
+  showEta: boolean
+}): React.ReactNode {
   if (!tasks || tasks.length === 0) {
     return <Text dimColor>No tasks to display</Text>
   }
@@ -136,49 +157,109 @@ function TreeView(): React.ReactNode {
   return (
     <Box flexDirection="column">
       {tasks.map((task) => (
-        <TaskNode
+        <TaskRow
           key={task.id}
           id={task.id}
           name={task.name}
           progress={task.progress}
           status={task.status}
           dependencies={task.dependencies}
+          showEta={showEta}
+          estimatedEndTime={task.metrics.estimatedEndTime}
         />
       ))}
     </Box>
   )
 }
 
-function GraphView(): React.ReactNode {
-  const options: VisualizationOptions = {
-    format: 'graph',
-    showProgress: true,
-    showEta: false,
-    includeMetadata: false,
+function GraphView({ tasks }: { tasks: VisualTaskNode[] }): React.ReactNode {
+  if (tasks.length === 0) {
+    return <Text dimColor>No tasks to display</Text>
   }
-  const graphViz = taskVisualizer.render(undefined, options)
-  return <Text>{graphViz}</Text>
+
+  const taskIds = new Set(tasks.map((task) => task.id))
+  let output = 'digraph TaskGraph {\n'
+  output += '  rankdir=LR;\n'
+  output += '  node [shape=box];\n\n'
+
+  for (const task of tasks) {
+    output += `  "${task.id}" [label="${task.name} (${task.progress.toFixed(0)}%)"];\n`
+  }
+
+  output += '\n'
+
+  for (const task of tasks) {
+    for (const depId of task.dependencies) {
+      if (taskIds.has(depId)) {
+        output += `  "${depId}" -> "${task.id}";\n`
+      }
+    }
+  }
+
+  output += '}\n'
+  return <Text>{output}</Text>
 }
 
-function TimelineView(): React.ReactNode {
-  const options: VisualizationOptions = {
-    format: 'timeline',
-    showProgress: true,
-    showEta: true,
-    includeMetadata: false,
+function TimelineView({ tasks }: { tasks: VisualTaskNode[] }): React.ReactNode {
+  const startedTasks = tasks.filter((task) => task.startedAt)
+  if (startedTasks.length === 0) {
+    return <Text dimColor>No started tasks</Text>
   }
-  const timeline = taskVisualizer.render(undefined, options)
-  return <Text>{timeline}</Text>
+
+  const minTime = Math.min(...startedTasks.map((task) => task.startedAt || Date.now()))
+  const maxTime = Math.max(
+    ...startedTasks.map((task) => task.completedAt || task.metrics.estimatedEndTime || Date.now()),
+  )
+  const timelineLength = 60
+  const timespan = Math.max(1, maxTime - minTime)
+
+  let output = 'Task Timeline:\n'
+  output += '0' + ' '.repeat(timelineLength - 2) + 'now\n'
+
+  for (const task of startedTasks) {
+    const start = task.startedAt || minTime
+    const end = task.completedAt || task.metrics.estimatedEndTime || Date.now()
+    const startPos = Math.floor(((start - minTime) / timespan) * timelineLength)
+    const endPos = Math.floor(((end - minTime) / timespan) * timelineLength)
+
+    let timeline = ' '.repeat(startPos)
+    timeline += '='.repeat(Math.max(1, endPos - startPos))
+    timeline += ' '.repeat(Math.max(0, timelineLength - endPos))
+    output += `${task.status.padEnd(10)} ${task.name.padEnd(20)} ${timeline}\n`
+  }
+
+  return <Text>{output}</Text>
 }
 
-function JSONView(): React.ReactNode {
-  const options: VisualizationOptions = {
-    format: 'json',
-    showProgress: true,
-    showEta: true,
-    includeMetadata: true,
-  }
-  const jsonOutput = taskVisualizer.render(undefined, options)
+function JSONView({
+  tasks,
+  aggregateStats,
+  showEta,
+}: {
+  tasks: VisualTaskNode[]
+  aggregateStats: AggregateProgress
+  showEta: boolean
+}): React.ReactNode {
+  const jsonOutput = JSON.stringify(
+    {
+      aggregate: aggregateStats,
+      tasks: tasks.map((task) => ({
+        id: task.id,
+        name: task.name,
+        status: task.status,
+        progress: task.progress,
+        dependencies: task.dependencies,
+        metrics: task.metrics,
+        ...(showEta && task.metrics.estimatedEndTime
+          ? { estimatedEndTime: new Date(task.metrics.estimatedEndTime).toISOString() }
+          : {}),
+        ...(task.metadata ? { metadata: task.metadata } : {}),
+      })),
+      criticalPath: taskVisualizer.getCriticalPath().map((task) => task.id),
+    },
+    null,
+    2,
+  )
   return <Text>{jsonOutput}</Text>
 }
 
@@ -210,7 +291,13 @@ export async function call(
     }
   }
 
-  const aggregateStats = taskVisualizer.getAggregateProgress()
+  const allTasks = taskVisualizer.getExecutionOrder()
+  const normalizedFilterStatus = filterStatus?.trim()
+  const filterIsValid = !normalizedFilterStatus || VALID_STATUSES.includes(normalizedFilterStatus as TaskStatus)
+  const visibleTasks = filterIsValid ? filterTasks(allTasks, normalizedFilterStatus) : allTasks
+  const aggregateStats = taskVisualizer.getAggregateProgress(
+    normalizedFilterStatus ? visibleTasks.map((task) => task.id) : undefined,
+  )
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -220,7 +307,15 @@ export async function call(
         </Text>
       </Box>
 
-      <AggregateStats stats={aggregateStats} />
+      <AggregateStats stats={aggregateStats} showEta={showEta} />
+
+      {!filterIsValid && normalizedFilterStatus && (
+        <Box marginBottom={1}>
+          <Text color="yellow">
+            Unknown status filter "{normalizedFilterStatus}". Valid values: {VALID_STATUSES.join(', ')}
+          </Text>
+        </Box>
+      )}
 
       {showCriticalPath && (
         <CriticalPathView />
@@ -228,17 +323,22 @@ export async function call(
 
       <Box marginBottom={1} borderStyle="round" borderColor="gray" padding={1} flexDirection="column">
         <Text bold>View: {viewMode}</Text>
+        {normalizedFilterStatus && filterIsValid && (
+          <Text dimColor>Filter: {normalizedFilterStatus}</Text>
+        )}
         <Box marginTop={1}>
-          {viewMode === 'tree' && <TreeView />}
-          {viewMode === 'graph' && <GraphView />}
-          {viewMode === 'timeline' && <TimelineView />}
-          {viewMode === 'json' && <JSONView />}
+          {viewMode === 'tree' && <TreeView tasks={visibleTasks} showEta={showEta} />}
+          {viewMode === 'graph' && <GraphView tasks={visibleTasks} />}
+          {viewMode === 'timeline' && <TimelineView tasks={visibleTasks} />}
+          {viewMode === 'json' && (
+            <JSONView tasks={visibleTasks} aggregateStats={aggregateStats} showEta={showEta} />
+          )}
         </Box>
       </Box>
 
       <Box marginTop={2}>
         <Text dimColor fontSize="small">
-          Use --view [tree|graph|timeline|json] to change view mode | --show-critical-path to highlight critical tasks
+          Use --view [tree|graph|timeline|json] | --filter [pending|in_progress|completed|failed|blocked] | --show-eta | --show-critical-path
         </Text>
       </Box>
     </Box>
