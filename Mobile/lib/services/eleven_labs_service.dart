@@ -6,7 +6,7 @@ import 'package:record/record.dart';
 class ElevenLabsService {
   final String apiKey;
   final String voiceId;
-  
+
   // Base URL for ElevenLabs API
   static const String _baseUrl = 'https://api.elevenlabs.io/v1';
 
@@ -29,10 +29,7 @@ class ElevenLabsService {
       body: jsonEncode({
         'text': text,
         'model_id': 'eleven_monolingual_v1',
-        'voice_settings': {
-          'stability': 0.5,
-          'similarity_boost': 0.5,
-        }
+        'voice_settings': {'stability': 0.5, 'similarity_boost': 0.5},
       }),
     );
 

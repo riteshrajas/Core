@@ -33,6 +33,15 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Local env config (optional overrides)
+.env
+.env.local
+.env.*.local
+
+# Flutter images
+flutter_01.png
+flutter_02.png
+
 # Symbolication related
 app.*.symbols
 

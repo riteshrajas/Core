@@ -1,0 +1,31 @@
+[project]
+name = "apex-agent"
+version = "0.1.0"
+description = "APEX real-time conversational voice agent backend"
+requires-python = ">=3.12"
+dependencies = [
+    # --- Core Agent ---
+    "langgraph>=0.2",
+    "langchain>=0.3",
+    "langchain-google-genai>=2.0",
+    # --- Real-time Voice Pipeline ---
+    "pipecat-ai[silero,google,elevenlabs,deepgram]>=0.0.40",
+    "pyaudio>=0.2.14",
+    # --- Server ---
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "websockets>=15.0",
+    # --- Utilities ---
+    "python-dotenv>=1.1",
+    "pydantic>=2.0",
+    "httpx>=0.28",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "ruff"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.uv]
+dev-dependencies = ["pytest", "pytest-asyncio", "ruff"]

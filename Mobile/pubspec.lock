@@ -96,6 +96,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  glow_orb:
+    dependency: "direct main"
+    description:
+      name: glow_orb
+      sha256: e95f874001642a75be9cd9e2585d5a8adae9962f747c84245ec773cffaabae43
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   http:
     dependency: "direct main"
     description:

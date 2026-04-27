@@ -34,7 +34,8 @@ class SocketService {
   SimplePublicKey? _remotePublicKey;
   SecretKey? _symmetricKey;
 
-  final _incomingController = StreamController<Map<String, dynamic>>.broadcast();
+  final _incomingController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final List<Map<String, dynamic>> _pendingPlainQueue = [];
   Completer<void>? _handshakeCompleter;
 
@@ -62,7 +63,7 @@ class SocketService {
         await _channel!.sink.close();
       }
     } catch (_) {}
-    
+
     try {
       _channel = WebSocketChannel.connect(uri);
       _subscription = _channel!.stream.listen(
@@ -73,7 +74,7 @@ class SocketService {
       );
       _connected = true;
       _reconnectAttempts = 0;
-      
+
       await _performHandshake();
       _startHeartbeat();
       await _flushPendingQueue();
@@ -94,11 +95,11 @@ class SocketService {
     _handshakeComplete = false;
     _handshakeCompleter = Completer<void>();
     _localKeyPair = await _x25519.newKeyPair();
-    final localPub = await _localKeyPair!.extractPublicKey();
+    final localPub = await _localKeyPair!.extractPublicKey() as SimplePublicKey;
     final payload = jsonEncode({
       'type': 'handshake',
       'publicKey': base64.encode(localPub.bytes),
-      'alg': 'X25519'
+      'alg': 'X25519',
     });
     _channel!.sink.add(payload);
     try {
@@ -114,7 +115,7 @@ class SocketService {
       final msgStr = raw is String ? raw : utf8.decode(raw as List<int>);
       final msg = jsonDecode(msgStr) as Map<String, dynamic>;
       final type = msg['type'];
-      
+
       if (type == 'handshake') {
         await _handleHandshake(msg);
         return;
@@ -144,7 +145,7 @@ class SocketService {
     );
     final sharedBytes = await sharedSecret.extractBytes();
     final info = utf8.encode('SocketService v1');
-    final derived = crypto.sha256.convert(<int>[]..addAll(sharedBytes)..addAll(info)).bytes;
+    final derived = crypto.sha256.convert(<int>[...sharedBytes, ...info]).bytes;
     _symmetricKey = SecretKey(derived);
     _handshakeComplete = true;
     _handshakeCompleter?.complete();
@@ -182,7 +183,11 @@ class SocketService {
   Future<String> _encryptPayload(Map<String, dynamic> payload) async {
     final jsonBytes = utf8.encode(jsonEncode(payload));
     final nonce = _randomBytes(12);
-    final secretBox = await _aead.encrypt(jsonBytes, secretKey: _symmetricKey!, nonce: nonce);
+    final secretBox = await _aead.encrypt(
+      jsonBytes,
+      secretKey: _symmetricKey!,
+      nonce: nonce,
+    );
     final packet = {
       'type': 'enc',
       'nonce': base64.encode(secretBox.nonce),
@@ -199,12 +204,18 @@ class SocketService {
 
   void _startHeartbeat() {
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(heartbeatInterval, (_) => _sendHeartbeat());
+    _heartbeatTimer = Timer.periodic(
+      heartbeatInterval,
+      (_) => _sendHeartbeat(),
+    );
   }
 
   void _sendHeartbeat() {
     if (!_handshakeComplete || _channel == null) return;
-    final payload = {'type': 'heartbeat', 'ts': DateTime.now().toUtc().toIso8601String()};
+    final payload = {
+      'type': 'heartbeat',
+      'ts': DateTime.now().toUtc().toIso8601String(),
+    };
     sendEncrypted(payload);
     _heartbeatAckTimer?.cancel();
     _heartbeatAckTimer = Timer(heartbeatTimeout, () {
@@ -266,9 +277,15 @@ class SocketService {
   }
 
   Duration _computeBackoff() {
-    final baseMs = initialBackoff.inMilliseconds * pow(backoffFactor, _reconnectAttempts);
-    final capped = min(maxBackoff.inMilliseconds.toDouble(), baseMs.toDouble()).toInt();
-    final jitter = capped > 1 ? Random().nextInt((capped * 0.5).toInt() + 1) : 0;
+    final baseMs =
+        initialBackoff.inMilliseconds * pow(backoffFactor, _reconnectAttempts);
+    final capped = min(
+      maxBackoff.inMilliseconds.toDouble(),
+      baseMs.toDouble(),
+    ).toInt();
+    final jitter = capped > 1
+        ? Random().nextInt((capped * 0.5).toInt() + 1)
+        : 0;
     return Duration(milliseconds: capped + jitter);
   }
 
