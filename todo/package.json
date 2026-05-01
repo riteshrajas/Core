@@ -1,0 +1,13 @@
+{
+  "name": "@apex/todo",
+  "version": "1.0.0",
+  "description": "Persistent to-do list CLI module for the APEX ecosystem",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/todo.ts",
+    "dev": "bun run --watch src/todo.ts",
+    "test": "bun test"
+  },
+  "keywords": ["apex", "todo", "cli", "task-management"],
+  "license": "MIT"
+}
