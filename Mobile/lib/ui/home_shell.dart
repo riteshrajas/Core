@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../state/apex_client_scope.dart';
+import 'live/gemini_live_screen.dart';
 import 'screens/commands_screen.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/utilities_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -15,9 +17,15 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _selectedIndex = 0;
 
-  final _pages = const [DashboardScreen(), CommandsScreen(), ProfileScreen()];
+  final _pages = const [
+    GeminiLiveScreen(),
+    DashboardScreen(),
+    CommandsScreen(),
+    UtilitiesScreen(),
+    ProfileScreen(),
+  ];
 
-  final _titles = const ['Dashboard', 'Commands', 'Profile'];
+  final _titles = const ['Voice', 'Cloud', 'Commands', 'Utilities', 'Profile'];
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +36,7 @@ class _HomeShellState extends State<HomeShell> {
       appBar: AppBar(
         title: Text(_titles[_selectedIndex]),
         actions: [
-          if (_selectedIndex != 2)
+          if (_selectedIndex != 4)
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Center(
@@ -54,14 +62,24 @@ class _HomeShellState extends State<HomeShell> {
             setState(() => _selectedIndex = index),
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: Icon(Icons.graphic_eq),
+            selectedIcon: Icon(Icons.graphic_eq),
+            label: 'Voice',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.cloud_queue),
+            selectedIcon: Icon(Icons.cloud),
+            label: 'Cloud',
           ),
           NavigationDestination(
             icon: Icon(Icons.terminal_outlined),
             selectedIcon: Icon(Icons.terminal),
             label: 'Commands',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.apps_outlined),
+            selectedIcon: Icon(Icons.apps),
+            label: 'Utilities',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

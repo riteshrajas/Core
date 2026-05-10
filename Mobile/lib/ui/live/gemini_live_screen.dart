@@ -68,8 +68,9 @@ class _GeminiLiveScreenState extends State<GeminiLiveScreen> {
             inputLevel: session.inputLevel,
             agentLevel: session.agentLevel,
             listening: session.micOn,
-            speaking: session.speechActive,
+            speaking: session.speechActive || session.agentSpeaking,
             connected: session.state == LiveConnectionState.connected,
+            onPressed: session.agentSpeaking ? session.interruptAgent : null,
           ),
           SafeArea(
             child: Padding(
@@ -121,11 +122,13 @@ class _GeminiLiveScreenState extends State<GeminiLiveScreen> {
                   const Spacer(flex: 2),
                   _BottomControls(
                     micOn: session.micOn,
+                    agentSpeaking: session.agentSpeaking,
                     speakerOn: session.speakerOn,
                     connected: session.state == LiveConnectionState.connected,
                     connecting: session.state == LiveConnectionState.connecting,
                     lastError: session.lastError,
                     onMicPressed: session.toggleMic,
+                    onInterruptPressed: session.interruptAgent,
                     onSpeakerPressed: session.toggleSpeaker,
                     onConnectPressed: () async {
                       try {
@@ -323,11 +326,13 @@ class _TopPill extends StatelessWidget {
 
 class _BottomControls extends StatelessWidget {
   final bool micOn;
+  final bool agentSpeaking;
   final bool speakerOn;
   final bool connected;
   final bool connecting;
   final String? lastError;
   final VoidCallback onMicPressed;
+  final VoidCallback onInterruptPressed;
   final VoidCallback onSpeakerPressed;
   final VoidCallback onConnectPressed;
   final VoidCallback onClearPressed;
@@ -335,11 +340,13 @@ class _BottomControls extends StatelessWidget {
 
   const _BottomControls({
     required this.micOn,
+    required this.agentSpeaking,
     required this.speakerOn,
     required this.connected,
     required this.connecting,
     required this.lastError,
     required this.onMicPressed,
+    required this.onInterruptPressed,
     required this.onSpeakerPressed,
     required this.onConnectPressed,
     required this.onClearPressed,
@@ -395,9 +402,12 @@ class _BottomControls extends StatelessWidget {
                   const Spacer(),
                   _MicButton(
                     micOn: micOn,
+                    agentSpeaking: agentSpeaking,
                     enabled: connected || connecting,
                     connecting: connecting,
-                    onPressed: connected ? onMicPressed : onConnectPressed,
+                    onPressed: agentSpeaking
+                        ? onInterruptPressed
+                        : (connected ? onMicPressed : onConnectPressed),
                   ),
                   const Spacer(),
                   IconButton(
@@ -441,12 +451,14 @@ class _CallHeader extends StatelessWidget {
 
 class _MicButton extends StatelessWidget {
   final bool micOn;
+  final bool agentSpeaking;
   final bool enabled;
   final bool connecting;
   final VoidCallback onPressed;
 
   const _MicButton({
     required this.micOn,
+    required this.agentSpeaking,
     required this.enabled,
     required this.connecting,
     required this.onPressed,
@@ -456,11 +468,12 @@ class _MicButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final bg = micOn ? scheme.primary : scheme.surfaceContainerHighest;
-    final fg = micOn ? scheme.onPrimary : scheme.onSurface;
+    final active = micOn || agentSpeaking;
+    final bg = active ? scheme.primary : scheme.surfaceContainerHighest;
+    final fg = active ? scheme.onPrimary : scheme.onSurface;
 
     return AnimatedScale(
-      scale: micOn ? 1.08 : 1.0,
+      scale: active ? 1.08 : 1.0,
       duration: const Duration(milliseconds: 240),
       curve: Curves.easeOutCubic,
       child: SizedBox(
@@ -485,8 +498,12 @@ class _MicButton extends StatelessWidget {
                     child: CircularProgressIndicator(strokeWidth: 2.4),
                   )
                 : Icon(
-                    micOn ? Icons.stop_rounded : Icons.mic_rounded,
-                    key: ValueKey(micOn ? 'stop' : 'mic'),
+                    agentSpeaking
+                        ? Icons.stop_rounded
+                        : (micOn ? Icons.mic_rounded : Icons.mic_none_rounded),
+                    key: ValueKey(
+                      agentSpeaking ? 'stop' : (micOn ? 'mic-on' : 'mic-off'),
+                    ),
                     size: 30,
                   ),
           ),

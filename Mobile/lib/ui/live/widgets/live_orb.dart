@@ -9,6 +9,7 @@ class LiveOrb extends StatelessWidget {
   final bool listening;
   final bool speaking;
   final bool connected;
+  final VoidCallback? onPressed;
 
   const LiveOrb({
     super.key,
@@ -17,6 +18,7 @@ class LiveOrb extends StatelessWidget {
     required this.listening,
     required this.speaking,
     required this.connected,
+    this.onPressed,
   });
 
   @override
@@ -33,57 +35,59 @@ class LiveOrb extends StatelessWidget {
     final borderOpacity = connected ? (0.28 + energy * 0.16) : 0.15;
     final innerOpacity = connected ? (0.04 + energy * 0.08) : 0.03;
 
-    return Positioned.fill(
-      child: IgnorePointer(
-        child: Container(
-          color: Colors.black,
-          child: Align(
-            alignment: const Alignment(0, -0.06),
-            child: SizedBox(
-              width: orbSize,
-              height: orbSize,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _InnerOrbGradient(
-                    connected: connected,
-                    energy: energy,
-                    speaking: speaking,
-                  ),
-                  GlowOrb(
-                    size: orbSize,
-                    backgroundColor: Colors.transparent,
-                    eyeColor: connected
-                        ? const Color(0xFFE2F7FF)
-                        : Colors.white70,
-                    eyeWidth: connected ? 16.0 : 14.0,
-                    eyeHeight: connected ? 34.0 : 30.0,
-                    eyeSpacing: connected ? 40.0 : 36.0,
-                    eyeBorderRadius: 6.0,
-                    enableBlinking: true,
-                    enableLookAround: true,
-                    enableFloating: true,
-                    enableColorShift: false,
-                    floatIntensity: floatIntensity,
-                    lookAroundIntensity: lookIntensity,
-                    borderWidth: connected ? 1.6 : 1.0,
-                    borderOpacity: borderOpacity,
-                    innerGradientOpacity: innerOpacity,
-                    colorBlobs: const [],
-                    customColorScheme: connected
-                        ? const [
-                            Color(0xFF67E8F9),
-                            Color(0xFF22D3EE),
-                            Color(0xFF38BDF8),
-                          ]
-                        : const [Color(0xFF334155), Color(0xFF1E293B)],
-                  ),
-                  _RainbowRing(enabled: connected, energy: energy),
-                ],
+    final orb = Align(
+      alignment: const Alignment(0, -0.06),
+      child: SizedBox(
+        width: orbSize,
+        height: orbSize,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onPressed,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _InnerOrbGradient(
+                connected: connected,
+                energy: energy,
+                speaking: speaking,
               ),
-            ),
+              GlowOrb(
+                size: orbSize,
+                backgroundColor: Colors.transparent,
+                eyeColor: connected ? const Color(0xFFE2F7FF) : Colors.white70,
+                eyeWidth: connected ? 16.0 : 14.0,
+                eyeHeight: connected ? 34.0 : 30.0,
+                eyeSpacing: connected ? 40.0 : 36.0,
+                eyeBorderRadius: 6.0,
+                enableBlinking: true,
+                enableLookAround: true,
+                enableFloating: true,
+                enableColorShift: false,
+                floatIntensity: floatIntensity,
+                lookAroundIntensity: lookIntensity,
+                borderWidth: connected ? 1.6 : 1.0,
+                borderOpacity: borderOpacity,
+                innerGradientOpacity: innerOpacity,
+                colorBlobs: const [],
+                customColorScheme: connected
+                    ? const [
+                        Color(0xFF67E8F9),
+                        Color(0xFF22D3EE),
+                        Color(0xFF38BDF8),
+                      ]
+                    : const [Color(0xFF334155), Color(0xFF1E293B)],
+              ),
+              _RainbowRing(enabled: connected, energy: energy),
+            ],
           ),
         ),
+      ),
+    );
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black,
+        child: onPressed == null ? IgnorePointer(child: orb) : orb,
       ),
     );
   }

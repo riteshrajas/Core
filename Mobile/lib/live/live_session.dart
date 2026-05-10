@@ -47,6 +47,9 @@ class LiveSession extends ChangeNotifier {
 
   double _inputLevel = 0;
   double _agentLevel = 0;
+  bool _agentSpeaking = false;
+  Timer? _agentSpeechTimer;
+  DateTime? _ignoreAgentAudioUntil;
 
   bool _autoVad = true;
   double _vadSensitivity = 1.35;
@@ -84,6 +87,7 @@ class LiveSession extends ChangeNotifier {
   String get apiKey => _apiKey;
   double get inputLevel => _inputLevel;
   double get agentLevel => _agentLevel;
+  bool get agentSpeaking => _agentSpeaking;
   bool get autoVad => _autoVad;
   double get vadSensitivity => _vadSensitivity;
   VadState get vadState => _vadState;
@@ -197,7 +201,10 @@ class LiveSession extends ChangeNotifier {
         await startMic();
       }
     } catch (e, stack) {
-      developer.log('[LiveSession] CONNECTION EXCEPTION: $e', stackTrace: stack);
+      developer.log(
+        '[LiveSession] CONNECTION EXCEPTION: $e',
+        stackTrace: stack,
+      );
       _setError(e.toString());
       await _teardownTransport(preserveMicIntent: true, disableCallMode: false);
       if (_maintainConnection) {
@@ -271,6 +278,20 @@ Style:
     }
   }
 
+  Future<void> interruptAgent() async {
+    developer.log('[LiveSession] interruptAgent()');
+    _ignoreAgentAudioUntil = DateTime.now().add(const Duration(seconds: 2));
+    _markAgentSpeaking(false);
+    _agentLevel = 0;
+    _resetVad();
+    unawaited(_agent.sendUserActivity());
+    await _player.stop();
+    if (_state == LiveConnectionState.connected) {
+      await _player.start();
+    }
+    notifyListeners();
+  }
+
   Future<void> startMic() async {
     developer.log('[LiveSession] startMic()');
     _wantMicOn = true;
@@ -289,12 +310,7 @@ Style:
     if (_micOn) return;
     _micOn = true;
     _lastError = null;
-    _vadState = VadState.silence;
-    _speechMs = 0;
-    _silenceMs = 0;
-    _noiseFloor = 0.02;
-    _preRoll.clear();
-    _preRollMs = 0;
+    _resetVad();
     notifyListeners();
 
     final stream = await _recorder.startStream(
@@ -311,6 +327,12 @@ Style:
       (chunk) async {
         final rms = _pcm16Rms(chunk);
         _inputLevel = _smooth(_inputLevel, rms, 0.25);
+        if (_agentSpeaking) {
+          _resetVad();
+          notifyListeners();
+          return;
+        }
+
         _updateVad(chunk, rms);
         notifyListeners();
 
@@ -444,7 +466,8 @@ Style:
     _lastError = null;
     _inputLevel = 0;
     _agentLevel = 0;
-    _vadState = VadState.silence;
+    _markAgentSpeaking(false);
+    _resetVad();
     notifyListeners();
   }
 
@@ -541,8 +564,11 @@ Style:
         );
         notifyListeners();
       case ElevenLabsAudioEvent():
+        if (_ignoringAgentAudio) return;
+        final bytes = base64.decode(event.audioBase64);
         _agentLevel = _smooth(_agentLevel, max(_agentLevel, 0.6), 0.4);
-        unawaited(_player.write(base64.decode(event.audioBase64)));
+        _markAgentSpeaking(true, forBytes: bytes.length);
+        unawaited(_player.write(bytes));
         notifyListeners();
       case ElevenLabsErrorEvent():
         developer.log('[LiveSession] Agent Error: ${event.message}');
@@ -580,6 +606,7 @@ Style:
     await _stopMicInternal(preserveIntent: preserveMicIntent);
     _agentSub?.cancel();
     _agentSub = null;
+    _markAgentSpeaking(false);
     await _player.stop();
     await _agent.disconnect();
     _callTimer?.cancel();
@@ -619,6 +646,39 @@ Style:
     });
   }
 
+  bool get _ignoringAgentAudio {
+    final until = _ignoreAgentAudioUntil;
+    if (until == null) return false;
+    if (DateTime.now().isBefore(until)) return true;
+    _ignoreAgentAudioUntil = null;
+    return false;
+  }
+
+  void _markAgentSpeaking(bool value, {int forBytes = 0}) {
+    _agentSpeechTimer?.cancel();
+    _agentSpeechTimer = null;
+    _agentSpeaking = value;
+
+    if (!value) return;
+
+    final audioMs = _chunkDurationMs(forBytes, _outputSampleRate);
+    final holdMs = max(450, audioMs.round() + 280);
+    _agentSpeechTimer = Timer(Duration(milliseconds: holdMs), () {
+      _agentSpeaking = false;
+      _resetVad();
+      notifyListeners();
+    });
+  }
+
+  void _resetVad() {
+    _vadState = VadState.silence;
+    _speechMs = 0;
+    _silenceMs = 0;
+    _noiseFloor = 0.02;
+    _preRoll.clear();
+    _preRollMs = 0;
+  }
+
   double _pcm16Rms(Uint8List data) {
     if (data.length < 2) return 0;
     final bd = ByteData.sublistView(data);
@@ -640,6 +700,7 @@ Style:
   void dispose() {
     _levelDecayTimer?.cancel();
     _callTimer?.cancel();
+    _agentSpeechTimer?.cancel();
     _agentSub?.cancel();
     _micSub?.cancel();
     _player.dispose();
