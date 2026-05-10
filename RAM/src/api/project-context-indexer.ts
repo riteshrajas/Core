@@ -8,7 +8,8 @@ import type { ProjectContextDocument } from './types';
 export const DEFAULT_PROJECT_CONTEXT_FILES = [
   'README.md',
   'ARCHITECTURE.md',
-  'ANALYZE_FEATURES_README.md',
+  'SPEC_ASP_V2.md',
+  'MASTER_SETUP_GUIDE.md',
   'AGENT.md',
   'AGENTS.md',
   'ROADMAP.md',
@@ -16,7 +17,9 @@ export const DEFAULT_PROJECT_CONTEXT_FILES = [
   'Core/CLI/README.md',
   'Core/RAM/README.md',
   'MicroMax/README.md',
-  'MicroMax/OS/README.md',
+  'docs/MicroMax/DOCS.md',
+  'docs/MiniMax/DOCS.md',
+  'docs/MegaMax/DOCS.md',
   'IOT/README.md',
 ];
 
