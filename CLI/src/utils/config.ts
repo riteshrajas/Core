@@ -540,6 +540,13 @@ export type GlobalConfig = {
   // undefined = hardcoded Opus (backward-compat); null = leader's model; string = model alias/ID.
   teammateDefaultModel?: string | null
 
+  // APEX Infrastructure model roles selected during onboarding.
+  apexModelProfiles?: {
+    generalPlan?: string | null
+    coding?: string | null
+    backup?: string | null
+  }
+
   // PR status footer configuration (feature-flagged via GrowthBook)
   prStatusFooterEnabled?: boolean // Show PR review status in footer (default: true)
 

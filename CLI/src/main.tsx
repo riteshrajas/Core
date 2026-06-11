@@ -115,7 +115,7 @@ import { getGhAuthStatus } from './utils/github/ghAuthStatus.js';
 import { safeParseJSON } from './utils/json.js';
 import { logError } from './utils/log.js';
 import { getModelDeprecationWarning } from './utils/model/deprecation.js';
-import { getDefaultMainLoopModel, getUserSpecifiedModelSetting, normalizeModelStringForAPI, parseUserSpecifiedModel } from './utils/model/model.js';
+import { getApexModelProfile, getDefaultMainLoopModel, getUserSpecifiedModelSetting, normalizeModelStringForAPI, parseUserSpecifiedModel } from './utils/model/model.js';
 import { ensureModelStringsInitialized } from './utils/model/modelStrings.js';
 import { PERMISSION_MODES } from './utils/permissions/PermissionMode.js';
 import { checkAndDisableBypassPermissions, getAutoModeEnabledStateIfCached, initializeToolPermissionContext, initialPermissionModeFromCLI, isDefaultPermissionModeAuto, parseToolListFromCLI, removeDangerousPermissions, stripDangerousPermissionsForAutoMode, verifyAutoModeGateAccess } from './utils/permissions/permissionSetup.js';
@@ -2017,7 +2017,8 @@ async function run(): Promise<CommanderCommand> {
     // Special case the default model with the null keyword
     // NOTE: Model resolution happens after setup() to ensure trust is established before AWS auth
     const userSpecifiedModel = options.model === 'default' ? getDefaultMainLoopModel() : options.model;
-    const userSpecifiedFallbackModel = fallbackModel === 'default' ? getDefaultMainLoopModel() : fallbackModel;
+    const configuredFallbackModel = getApexModelProfile('backup');
+    const userSpecifiedFallbackModel = fallbackModel === 'default' ? getDefaultMainLoopModel() : fallbackModel ?? configuredFallbackModel;
 
     // Reuse preSetupCwd unless setup() chdir'd (worktreeEnabled). Saves a
     // getCwd() syscall in the common path.
@@ -2236,6 +2237,23 @@ async function run(): Promise<CommanderCommand> {
         event: 'startup' as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
         durationMs: Math.round(process.uptime() * 1000)
       });
+
+      // Infrastructure setup is now handled during onboarding (APEXInfrastructureOnboarding)
+      // so we don't need to check again here for interactive sessions.
+      // Auto-start 9Router silently (APEX requires it)
+      const {
+        ensureApexInfrastructureReady
+      } = await import('./utils/apexInfrastructureStartup.js');
+      logForDebugging('[STARTUP] Starting APEX Infrastructure (9Router)...');
+      const infrastructureResult = await ensureApexInfrastructureReady(root);
+      if (!infrastructureResult.ready) {
+        // Infrastructure failed — show error and exit
+        await exitWithError(root, `APEX Infrastructure setup failed: ${infrastructureResult.message}`);
+      }
+      // Set env vars to use 9Router (already set by startup, but ensure they're active)
+      process.env.APEX_CODE_USE_APEX_INFRASTRUCTURE = '1'
+      process.env.APEX_CODE_USE_9ROUTER = '1'
+
       logForDebugging('[STARTUP] Running showSetupScreens()...');
       const setupScreensStart = Date.now();
       const onboardingShown = await showSetupScreens(root, permissionMode, allowDangerouslySkipPermissions, commands, enableAPEXInChrome, devChannels);
@@ -2312,6 +2330,20 @@ async function run(): Promise<CommanderCommand> {
     if (process.exitCode !== undefined) {
       logForDebugging('Graceful shutdown initiated, skipping further initialization');
       return;
+    }
+
+    if (isNonInteractiveSession) {
+      const {
+        ensureApexInfrastructureReady
+      } = await import('./utils/apexInfrastructureStartup.js');
+      const infrastructureResult = await ensureApexInfrastructureReady(undefined);
+      if (!infrastructureResult.ready) {
+        process.stderr.write(chalk.red(`APEX Infrastructure setup failed: ${infrastructureResult.message}\n`));
+        process.exit(1);
+      }
+      // Ensure 9Router env vars are set
+      process.env.APEX_CODE_USE_APEX_INFRASTRUCTURE = '1'
+      process.env.APEX_CODE_USE_9ROUTER = '1'
     }
 
     // Initialize LSP manager AFTER trust is established (or in non-interactive mode
@@ -3080,6 +3112,7 @@ async function run(): Promise<CommanderCommand> {
       strictMcpConfig,
       systemPrompt,
       appendSystemPrompt,
+      fallbackModel: userSpecifiedFallbackModel,
       taskListId,
       thinkingConfig,
       ...(uploaderReady && {

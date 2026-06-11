@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS, logEvent } from 'src/services/analytics/index.js';
 import { setupTerminal, shouldOfferTerminalSetup } from '../commands/terminalSetup/terminalSetup.js';
 import { useExitOnCtrlCDWithKeybindings } from '../hooks/useExitOnCtrlCDWithKeybindings.js';
-import { Box, Link, Newline, Text, useTheme } from '../ink.js';
+import { Box, Newline, Text, useTheme } from '../ink.js';
 import { useKeybindings } from '../keybindings/useKeybinding.js';
 import { isAnthropicAuthEnabled } from '../utils/auth.js';
 import { normalizeApiKeyForConfig } from '../utils/authPortable.js';
@@ -16,10 +16,11 @@ import { ApproveApiKey } from './ApproveApiKey.js';
 import { ConsoleOAuthFlow } from './ConsoleOAuthFlow.js';
 import { Select } from './CustomSelect/select.js';
 import { WelcomeV2 } from './LogoV2/WelcomeV2.js';
+import { ModelProfileOnboarding } from './ModelProfileOnboarding.js';
 import { PressEnterToContinue } from './PressEnterToContinue.js';
 import { ThemePicker } from './ThemePicker.js';
 import { OrderedList } from './ui/OrderedList.js';
-type StepId = 'preflight' | 'theme' | 'oauth' | 'api-key' | 'security' | 'terminal-setup';
+type StepId = 'preflight' | 'theme' | 'model-profiles' | 'oauth' | 'api-key' | 'security' | 'terminal-setup';
 interface OnboardingStep {
   id: StepId;
   component: React.ReactNode;
@@ -80,13 +81,11 @@ export function Onboarding({
             </Text>
           </OrderedList.Item>
           <OrderedList.Item>
-            <Text>
-              Due to prompt injection risks, only use it with code you trust
-            </Text>
+            <Text>Use APEX in workspaces you understand</Text>
             <Text dimColor wrap="wrap">
-              For more details see:
+              Review files, prompts, and commands from unfamiliar projects
               <Newline />
-              <Link url="https://code.claude.com/docs/en/security" />
+              before approving actions.
             </Text>
           </OrderedList.Item>
         </OrderedList>
@@ -94,6 +93,7 @@ export function Onboarding({
       <PressEnterToContinue />
     </Box>;
   const preflightStep = <PreflightStep onSuccess={goToNextStep} />;
+  const modelProfilesStep = <ModelProfileOnboarding onDone={goToNextStep} />;
   // Create the steps array - determine which steps to include based on reAuth and oauthEnabled
   const apiKeyNeedingApproval = useMemo(() => {
     // Add API key step if needed
@@ -123,6 +123,10 @@ export function Onboarding({
   steps.push({
     id: 'theme',
     component: themeStep
+  });
+  steps.push({
+    id: 'model-profiles',
+    component: modelProfilesStep
   });
   if (apiKeyNeedingApproval) {
     steps.push({

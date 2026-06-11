@@ -67,16 +67,17 @@ export function LogoV2() {
   return (
     <Box
       flexDirection="column"
-      paddingX={2}
+      paddingLeft={2}
       paddingY={1}
-      width={100}
-      borderStyle="round"
+      width="100%"
+      borderLeft={true}
+      borderStyle="single"
       borderColor="rgb(95,120,255)"
     >
       <Box flexDirection="row" justifyContent="space-between">
-        <Box flexDirection="column" marginX={2}>
+        <Box flexDirection="column">
           <GradientText
-            text="   Welcome back to APEX"
+            text="Welcome back to APEX"
             from={{ r: 178, g: 211, b: 255 }}
             to={{ r: 152, g: 166, b: 238 }}
           />
@@ -91,8 +92,8 @@ export function LogoV2() {
           ))}
         </Box>
 
-        <Box flexDirection="column" marginTop={4} marginRight={4} alignItems="flex-end">
-          <Text color="rgb(170,185,255)">v2.1.87-dev</Text>
+        <Box flexDirection="column" marginTop={3} marginRight={4} alignItems="flex-end">
+          <Text color="rgb(170,185,255)" dimColor>{`v${'2.1.87-dev'}`}</Text>
           <GradientText
             text="AI-POWERED CORE CLI"
             from={{ r: 179, g: 233, b: 255 }}
@@ -101,39 +102,36 @@ export function LogoV2() {
         </Box>
       </Box>
 
-      <Box marginTop={2} paddingX={2}>
-        <Text color="rgb(200,212,242)">
+      <Box marginTop={1} paddingRight={4}>
+        <Text color="rgb(200,212,242)" dimColor>
           APEX is a comprehensive AI platform that connects to advanced models for task 
-          automation, optimization, and cloud services. Describe your objective to begin, 
-          or use / for commands.
+          automation, optimization, and cloud services. Describe your objective to begin.
         </Text>
       </Box>
 
-      <Box marginTop={1} paddingX={2} gap={2}>
-        <Text>
-          <Text color="rgb(180,195,240)">○ </Text>
-          <Text color="rgb(180,195,240)">Connected to APEX Core   </Text>
-          <Text color="rgb(77,219,129)">● </Text>
-          <Text color="rgb(108,234,156)">Online   </Text>
-          <Text color="rgb(96,168,255)">● </Text>
-          <Text color="rgb(127,186,255)">Model: gpt-oss:20b-cloud   </Text>
-          <Text color="rgb(128,161,255)">● </Text>
-          <Text color="rgb(154,181,255)">Billing: API Usage Billing</Text>
+      <Box marginTop={1} gap={1}>
+        <Text color="rgb(180,195,240)">Connected</Text>
+        <Text dimColor>·</Text>
+        <Text color="rgb(108,234,156)">Online</Text>
+        <Text dimColor>·</Text>
+        <Text color="rgb(127,186,255)">gpt-oss:20b-cloud</Text>
+        <Text dimColor>·</Text>
+        <Text color="rgb(154,181,255)">API Billing</Text>
+      </Box>
+
+      {/* Notices */}
+      <Box flexDirection="column" marginTop={1}>
+        <Text color="rgb(255,190,91)" dimColor italic>
+          ⚠ Plugin sync delayed. Retrying in background.
         </Text>
       </Box>
 
-      <Box flexDirection="column" marginTop={1} paddingX={2}>
-        <Text color="rgb(255,211,104)">⚠ Notices:</Text>
-        <Text color="rgb(255,190,91)">⚠ Plugin sync delayed. Retrying in background.</Text>
-      </Box>
-
-      <Box flexDirection="row" justifyContent="space-between" marginTop={1} paddingX={2}>
-        <Box flexDirection="column">
-          <Text color="rgb(168,177,212)">Activity: No recent activity yet.</Text>
-          <Text color="rgb(168,177,212)">Activity: No recent activity yet.</Text>
+      <Box flexDirection="row" justifyContent="space-between" marginTop={1} paddingRight={2}>
+        <Box flexDirection="row" gap={1}>
+          <Text color="rgb(168,177,212)" dimColor>Activity: None</Text>
         </Box>
-        <Box marginTop={1}>
-          <Text color="rgb(192,180,127)">{`Dir: ${cwd}   ${apexMdStatus}`}</Text>
+        <Box>
+          <Text color="rgb(120,130,160)" dimColor>{`${cwd} · ${apexMdStatus}`}</Text>
         </Box>
       </Box>
 

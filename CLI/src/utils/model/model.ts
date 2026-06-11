@@ -21,12 +21,17 @@ import {
   is1mContextDisabled,
   modelSupports1M,
 } from '../context.js'
+import { getGlobalConfig } from '../config.js'
 import { isEnvTruthy } from '../envUtils.js'
 import { getModelStrings, resolveOverriddenModel } from './modelStrings.js'
 import { formatModelPricing, getOpus46CostTier } from '../modelCost.js'
 import { getSettings_DEPRECATED } from '../settings/settings.js'
 import type { PermissionMode } from '../permissions/PermissionMode.js'
-import { getAPIProvider } from './providers.js'
+import {
+  DEFAULT_9ROUTER_MODEL,
+  get9RouterModelOverride,
+  getAPIProvider,
+} from './providers.js'
 import { LIGHTNING_BOLT } from '../../constants/figures.js'
 import { isModelAllowed } from './modelAllowlist.js'
 import { type ModelAlias, isModelAlias } from './aliases.js'
@@ -35,6 +40,17 @@ import { capitalize } from '../stringUtils.js'
 export type ModelShortName = string
 export type ModelName = string
 export type ModelSetting = ModelName | ModelAlias | null
+export type ApexModelProfileKey = 'generalPlan' | 'coding' | 'backup'
+
+export function getApexModelProfile(
+  key: ApexModelProfileKey,
+): ModelName | undefined {
+  try {
+    return getGlobalConfig().apexModelProfiles?.[key] ?? undefined
+  } catch {
+    return undefined
+  }
+}
 
 export function getSmallFastModel(): ModelName {
   return process.env.ANTHROPIC_SMALL_FAST_MODEL || getDefaultHaikuModel()
@@ -58,8 +74,9 @@ export function isNonCustomOpusModel(model: ModelName): boolean {
  * Priority order within this function:
  * 1. Model override during session (from /model command) - highest priority
  * 2. Model override at startup (from --model flag)
- * 3. ANTHROPIC_MODEL environment variable
- * 4. Settings (from user's saved settings)
+ * 3. APEX_CODE_9ROUTER_MODEL when 9Router is active
+ * 4. ANTHROPIC_MODEL environment variable
+ * 5. Settings (from user's saved settings)
  */
 export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
   let specifiedModel: ModelSetting | undefined
@@ -69,7 +86,11 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
     specifiedModel = modelOverride
   } else {
     const settings = getSettings_DEPRECATED() || {}
-    specifiedModel = process.env.ANTHROPIC_MODEL || settings.model || undefined
+    specifiedModel =
+      (getAPIProvider() === '9router' ? get9RouterModelOverride() : undefined) ||
+      process.env.ANTHROPIC_MODEL ||
+      settings.model ||
+      undefined
   }
 
   // Ignore the user-specified model if it's not in the availableModels allowlist.
@@ -86,9 +107,10 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
  * Model Selection Priority Order:
  * 1. Model override during session (from /model command) - highest priority
  * 2. Model override at startup (from --model flag)
- * 3. ANTHROPIC_MODEL environment variable
- * 4. Settings (from user's saved settings)
- * 5. Built-in default
+ * 3. APEX_CODE_9ROUTER_MODEL when 9Router is active
+ * 4. ANTHROPIC_MODEL environment variable
+ * 5. Settings (from user's saved settings)
+ * 6. Built-in default
  *
  * @returns The resolved model name to use
  */
@@ -151,18 +173,28 @@ export function getRuntimeMainLoopModel(params: {
   exceeds200kTokens?: boolean
 }): ModelName {
   const { permissionMode, mainLoopModel, exceeds200kTokens = false } = params
+  const userSpecifiedModel = getUserSpecifiedModelSetting()
 
   // opusplan uses Opus in plan mode without [1m] suffix.
   if (
-    getUserSpecifiedModelSetting() === 'opusplan' &&
+    userSpecifiedModel === 'opusplan' &&
     permissionMode === 'plan' &&
     !exceeds200kTokens
   ) {
     return getDefaultOpusModel()
   }
 
+  const generalPlanModel = getApexModelProfile('generalPlan')
+  if (
+    generalPlanModel &&
+    permissionMode === 'plan' &&
+    !exceeds200kTokens
+  ) {
+    return parseUserSpecifiedModel(generalPlanModel)
+  }
+
   // sonnetplan by default
-  if (getUserSpecifiedModelSetting() === 'haiku' && permissionMode === 'plan') {
+  if (userSpecifiedModel === 'haiku' && permissionMode === 'plan') {
     return getDefaultSonnetModel()
   }
 
@@ -179,6 +211,17 @@ export function getRuntimeMainLoopModel(params: {
  * @returns The default model setting to use
  */
 export function getDefaultMainLoopModelSetting(): ModelName | ModelAlias {
+  if (getAPIProvider() === '9router' && get9RouterModelOverride()) {
+    return get9RouterModelOverride()!
+  }
+  const codingModel = getApexModelProfile('coding')
+  if (codingModel) {
+    return codingModel
+  }
+  if (getAPIProvider() === '9router') {
+    return DEFAULT_9ROUTER_MODEL
+  }
+
   if (isCodexSubscriber()) {
     return getModelStrings().gpt53codex
   }

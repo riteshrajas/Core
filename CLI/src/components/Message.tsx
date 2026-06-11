@@ -98,11 +98,14 @@ function MessageImpl(t0) {
     case "assistant":
       {
         const t2 = containerWidth ?? "100%";
+        const assistantModelUsed = getAssistantModelUsed(message);
+        const assistantDurationMs = getAssistantDurationMs(message);
+        const assistantTotalTokens = getAssistantTotalTokens(message);
         let t3;
         if ($[5] !== addMargin || $[6] !== commands || $[7] !== inProgressToolUseIDs || $[8] !== isTranscriptMode || $[9] !== lastThinkingBlockId || $[10] !== lookups || $[11] !== message.advisorModel || $[12] !== message.message.content || $[13] !== message.uuid || $[14] !== onOpenRateLimitOptions || $[15] !== progressMessagesForMessage || $[16] !== shouldAnimate || $[17] !== shouldShowDot || $[18] !== tools || $[19] !== verbose || $[20] !== width) {
           let t4;
           if ($[22] !== addMargin || $[23] !== commands || $[24] !== inProgressToolUseIDs || $[25] !== isTranscriptMode || $[26] !== lastThinkingBlockId || $[27] !== lookups || $[28] !== message.advisorModel || $[29] !== message.uuid || $[30] !== onOpenRateLimitOptions || $[31] !== progressMessagesForMessage || $[32] !== shouldAnimate || $[33] !== shouldShowDot || $[34] !== tools || $[35] !== verbose || $[36] !== width) {
-            t4 = (_, index_0) => <AssistantMessageBlock key={index_0} param={_} addMargin={addMargin} tools={tools} commands={commands} verbose={verbose} inProgressToolUseIDs={inProgressToolUseIDs} progressMessagesForMessage={progressMessagesForMessage} shouldAnimate={shouldAnimate} shouldShowDot={shouldShowDot} width={width} inProgressToolCallCount={inProgressToolUseIDs.size} isTranscriptMode={isTranscriptMode} lookups={lookups} onOpenRateLimitOptions={onOpenRateLimitOptions} thinkingBlockId={`${message.uuid}:${index_0}`} lastThinkingBlockId={lastThinkingBlockId} advisorModel={message.advisorModel} />;
+            t4 = (_, index_0) => <AssistantMessageBlock key={index_0} param={_} addMargin={addMargin} tools={tools} commands={commands} verbose={verbose} inProgressToolUseIDs={inProgressToolUseIDs} progressMessagesForMessage={progressMessagesForMessage} shouldAnimate={shouldAnimate} shouldShowDot={shouldShowDot} width={width} inProgressToolCallCount={inProgressToolUseIDs.size} isTranscriptMode={isTranscriptMode} lookups={lookups} onOpenRateLimitOptions={onOpenRateLimitOptions} thinkingBlockId={`${message.uuid}:${index_0}`} lastThinkingBlockId={lastThinkingBlockId} advisorModel={message.advisorModel} modelUsed={assistantModelUsed} durationMs={assistantDurationMs} totalTokens={assistantTotalTokens} />;
             $[22] = addMargin;
             $[23] = commands;
             $[24] = inProgressToolUseIDs;
@@ -449,7 +452,10 @@ function AssistantMessageBlock(t0) {
     onOpenRateLimitOptions,
     thinkingBlockId,
     lastThinkingBlockId,
-    advisorModel
+    advisorModel,
+    modelUsed,
+    durationMs,
+    totalTokens
   } = t0;
   if (feature("CONNECTOR_TEXT")) {
     if (isConnectorTextBlock(param)) {
@@ -466,7 +472,7 @@ function AssistantMessageBlock(t0) {
       }
       let t2;
       if ($[2] !== addMargin || $[3] !== onOpenRateLimitOptions || $[4] !== shouldShowDot || $[5] !== t1 || $[6] !== verbose || $[7] !== width) {
-        t2 = <AssistantTextMessage param={t1} addMargin={addMargin} shouldShowDot={shouldShowDot} verbose={verbose} width={width} onOpenRateLimitOptions={onOpenRateLimitOptions} />;
+        t2 = <AssistantTextMessage param={t1} addMargin={addMargin} shouldShowDot={shouldShowDot} verbose={verbose} width={width} onOpenRateLimitOptions={onOpenRateLimitOptions} modelUsed={modelUsed} durationMs={durationMs} totalTokens={totalTokens} />;
         $[2] = addMargin;
         $[3] = onOpenRateLimitOptions;
         $[4] = shouldShowDot;
@@ -508,7 +514,7 @@ function AssistantMessageBlock(t0) {
       {
         let t1;
         if ($[22] !== addMargin || $[23] !== onOpenRateLimitOptions || $[24] !== param || $[25] !== shouldShowDot || $[26] !== verbose || $[27] !== width) {
-          t1 = <AssistantTextMessage param={param} addMargin={addMargin} shouldShowDot={shouldShowDot} verbose={verbose} width={width} onOpenRateLimitOptions={onOpenRateLimitOptions} />;
+          t1 = <AssistantTextMessage param={param} addMargin={addMargin} shouldShowDot={shouldShowDot} verbose={verbose} width={width} onOpenRateLimitOptions={onOpenRateLimitOptions} modelUsed={modelUsed} durationMs={durationMs} totalTokens={totalTokens} />;
           $[22] = addMargin;
           $[23] = onOpenRateLimitOptions;
           $[24] = param;
@@ -598,6 +604,39 @@ export function hasThinkingContent(m: {
 }): boolean {
   if (m.type !== 'assistant' || !m.message) return false;
   return m.message.content.some(b => b.type === 'thinking' || b.type === 'redacted_thinking');
+}
+
+function readNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function getAssistantModelUsed(message: AssistantMessage): string | undefined {
+  return typeof message.message.model === 'string' ? message.message.model : undefined;
+}
+
+function getAssistantDurationMs(message: AssistantMessage): number | undefined {
+  const candidate = message.message as Record<string, unknown>;
+  return readNumber(candidate.duration_ms ?? candidate.durationMs);
+}
+
+function getAssistantTotalTokens(message: AssistantMessage): number | undefined {
+  const usage = message.message.usage as Record<string, unknown> | undefined;
+  if (!usage) {
+    return undefined;
+  }
+
+  const totalTokens = readNumber(usage.total_tokens ?? usage.totalTokens);
+  if (typeof totalTokens === 'number') {
+    return totalTokens;
+  }
+
+  const inputTokens = readNumber(usage.input_tokens ?? usage.inputTokens) ?? 0;
+  const outputTokens = readNumber(usage.output_tokens ?? usage.outputTokens) ?? 0;
+  if (inputTokens === 0 && outputTokens === 0) {
+    return undefined;
+  }
+
+  return inputTokens + outputTokens;
 }
 
 /** Exported for testing */

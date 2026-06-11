@@ -113,11 +113,10 @@ export function isAnthropicAuthEnabled(): boolean {
     return !!process.env.APEX_CODE_OAUTH_TOKEN
   }
 
-  const is3P =
-    isEnvTruthy(process.env.APEX_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_OPENAI) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_FOUNDRY)
+  const is3P = getAPIProvider() !== 'firstParty'
+  if (is3P) {
+    return false
+  }
 
   // Check if user has configured an external API key source
   // This allows externally-provided API keys to work (without requiring proxy configuration)
@@ -136,14 +135,12 @@ export function isAnthropicAuthEnabled(): boolean {
     apiKeySource === 'ANTHROPIC_API_KEY' || apiKeySource === 'apiKeyHelper'
 
   // Disable Anthropic auth if:
-  // 1. Using 3rd party services (Bedrock/Vertex/Foundry)
-  // 2. User has an external API key (regardless of proxy configuration)
-  // 3. User has an external auth token (regardless of proxy configuration)
+  // 1. User has an external API key (regardless of proxy configuration)
+  // 2. User has an external auth token (regardless of proxy configuration)
   // this may cause issues if users have complex proxy / gateway "client-side creds" auth scenarios,
   // e.g. if they want to set X-Api-Key to a gateway key but use Anthropic OAuth for the Authorization
   // if we get reports of that, we should probably add an env var to force OAuth enablement
   const shouldDisableAuth =
-    is3P ||
     (hasExternalAuthToken && !isManagedOAuthContext()) ||
     (hasExternalApiKey && !isManagedOAuthContext())
 
@@ -1658,14 +1655,10 @@ export function is1PApiCustomer(): boolean {
   // 2. Vertex AI users
   // 3. AWS Bedrock users
   // 4. Foundry users
+  // 5. OpenAI/9Router users
 
-  // Exclude Vertex, Bedrock, and Foundry customers
-  if (
-    isEnvTruthy(process.env.APEX_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_OPENAI) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_FOUNDRY)
-  ) {
+  // Exclude third-party provider customers
+  if (getAPIProvider() !== 'firstParty') {
     return false
   }
 
@@ -1798,14 +1791,9 @@ export function getSubscriptionName(): string {
   }
 }
 
-/** Check if using third-party services (Bedrock or Vertex or Foundry) */
+/** Check if using third-party services (Bedrock, Vertex, Foundry, OpenAI, or 9Router) */
 export function isUsing3PServices(): boolean {
-  return !!(
-    isEnvTruthy(process.env.APEX_CODE_USE_BEDROCK) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_VERTEX) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_OPENAI) ||
-    isEnvTruthy(process.env.APEX_CODE_USE_FOUNDRY)
-  )
+  return getAPIProvider() !== 'firstParty'
 }
 
 /**

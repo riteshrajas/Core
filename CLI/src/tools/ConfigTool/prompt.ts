@@ -78,14 +78,25 @@ ${modelSection}
 
 function generateModelSection(): string {
   try {
-    const options = getModelOptions()
-    const lines = options.map(o => {
+    const allOptions = getModelOptions()
+    // Limit the number of models in the prompt to avoid token bloat
+    const MAX_MODELS_IN_PROMPT = 10
+    const displayedOptions = allOptions.slice(0, MAX_MODELS_IN_PROMPT)
+    
+    const lines = displayedOptions.map(o => {
       const value = o.value === null ? 'null/"default"' : `"${o.value}"`
       return `  - ${value}: ${o.descriptionForModel ?? o.description}`
     })
-    return `## Model
-- model - Override the default model. Available options:
+
+    let section = `## Model
+- model - Override the default model. Some available options:
 ${lines.join('\n')}`
+
+    if (allOptions.length > MAX_MODELS_IN_PROMPT) {
+      section += `\n  - ... and ${allOptions.length - MAX_MODELS_IN_PROMPT} more. Any valid model ID from the infrastructure can be used.`
+    }
+    
+    return section
   } catch {
     return `## Model
 - model - Override the default model (sonnet, opus, haiku, best, or full model ID)`

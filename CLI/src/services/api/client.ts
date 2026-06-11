@@ -20,6 +20,8 @@ import {
 import { getUserAgent } from 'src/utils/http.js'
 import { getSmallFastModel } from 'src/utils/model/model.js'
 import {
+  get9RouterApiKey,
+  get9RouterBaseUrl,
   getAPIProvider,
   isFirstPartyAnthropicBaseUrl,
 } from 'src/utils/model/providers.js'
@@ -140,7 +142,7 @@ export async function getAnthropicClient({
   await checkAndRefreshOAuthTokenIfNeeded()
   logForDebugging('[API:auth] OAuth token check complete')
 
-  if (!isAPEXAISubscriber()) {
+  if (!isAPEXAISubscriber() && getAPIProvider() !== '9router') {
     await configureApiKeyHeaders(defaultHeaders, getIsNonInteractiveSession())
   }
 
@@ -303,6 +305,16 @@ export async function getAnthropicClient({
     }
     // we have always been lying about the return type - this doesn't support batching or models
     return new AnthropicVertex(vertexArgs) as unknown as Anthropic
+  }
+
+  if (getAPIProvider() === '9router') {
+    const clientConfig: ConstructorParameters<typeof Anthropic>[0] = {
+      apiKey: apiKey || get9RouterApiKey(),
+      baseURL: get9RouterBaseUrl(),
+      ...ARGS,
+      ...(isDebugToStdErr() && { logger: createStderrLogger() }),
+    }
+    return new Anthropic(clientConfig)
   }
 
   // ── Codex (OpenAI) provider via fetch adapter ─────────────────────

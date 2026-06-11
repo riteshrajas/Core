@@ -11,7 +11,11 @@ import { getDisplayPath } from './file.js';
 import { formatNumber } from './format.js';
 import { getIdeClientName, type IDEExtensionInstallationStatus, isJetBrainsIde, toIDEDisplayName } from './ide.js';
 import { getAPEXAiUserDefaultModelDescription, modelDisplayString } from './model/model.js';
-import { getAPIProvider } from './model/providers.js';
+import {
+  get9RouterApiKeySource,
+  get9RouterBaseUrl,
+  getAPIProvider
+} from './model/providers.js';
 import { getMTLSConfig } from './mtls.js';
 import { checkInstall } from './nativeInstaller/index.js';
 import { getProxyUrl } from './proxy.js';
@@ -244,7 +248,9 @@ export function buildAPIProviderProperties(): Property[] {
     const providerLabel = {
       bedrock: 'AWS Bedrock',
       vertex: 'Google Vertex AI',
-      foundry: 'Microsoft Foundry'
+      foundry: 'Microsoft Foundry',
+      openai: 'OpenAI Codex',
+      '9router': 'APEX Infrastructure'
     }[apiProvider];
     properties.push({
       label: 'API provider',
@@ -320,6 +326,15 @@ export function buildAPIProviderProperties(): Property[] {
         value: 'Microsoft Foundry auth skipped'
       });
     }
+  } else if (apiProvider === '9router') {
+    properties.push({
+      label: 'APEX Infrastructure base URL',
+      value: get9RouterBaseUrl()
+    });
+    properties.push({
+      label: 'APEX Infrastructure API key',
+      value: get9RouterApiKeySource()
+    });
   }
   const proxyUrl = getProxyUrl();
   if (proxyUrl) {

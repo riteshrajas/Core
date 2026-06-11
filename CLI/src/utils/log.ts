@@ -16,8 +16,8 @@ import {
 } from '../types/logs.js'
 import { CACHE_PATHS } from './cachePaths.js'
 import { stripDisplayTags, stripDisplayTagsAllowEmpty } from './displayTags.js'
-import { isEnvTruthy } from './envUtils.js'
 import { toError } from './errors.js'
+import { getAPIProvider } from './model/providers.js'
 import { isEssentialTrafficOnly } from './privacyLevel.js'
 import { jsonParse } from './slowOperations.js'
 
@@ -166,10 +166,8 @@ export function logError(error: unknown): void {
   try {
     // Check if error reporting should be disabled
     if (
-      // Cloud providers (Bedrock/Vertex/Foundry) always disable features
-      isEnvTruthy(process.env.APEX_CODE_USE_BEDROCK) ||
-      isEnvTruthy(process.env.APEX_CODE_USE_VERTEX) ||
-      isEnvTruthy(process.env.APEX_CODE_USE_FOUNDRY) ||
+      // Third-party providers always disable error reporting
+      getAPIProvider() !== 'firstParty' ||
       process.env.DISABLE_ERROR_REPORTING ||
       isEssentialTrafficOnly()
     ) {

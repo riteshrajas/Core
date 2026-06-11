@@ -548,6 +548,7 @@ export type Props = {
   strictMcpConfig?: boolean;
   systemPrompt?: string;
   appendSystemPrompt?: string;
+  fallbackModel?: string;
   // Optional callback invoked before query execution
   // Called after user message is added to conversation but before API call
   // Return false to prevent query execution
@@ -588,6 +589,7 @@ export function REPL({
   strictMcpConfig = false,
   systemPrompt: customSystemPrompt,
   appendSystemPrompt,
+  fallbackModel,
   onBeforeQuery,
   onTurnComplete,
   disabled = false,
@@ -2436,6 +2438,7 @@ export function REPL({
         } : s.agentDefinitions,
         customSystemPrompt,
         appendSystemPrompt,
+        fallbackModel,
         refreshTools: computeTools
       },
       getAppState: () => store.getState(),
@@ -2523,7 +2526,7 @@ export function REPL({
       requestPrompt: feature('HOOK_PROMPTS') ? requestPrompt : undefined,
       contentReplacementState: contentReplacementStateRef.current
     };
-  }, [commands, combinedInitialTools, mainThreadAgentDefinition, debug, initialMcpClients, ideInstallationStatus, dynamicMcpConfig, theme, allowedAgentTypes, store, setAppState, reverify, addNotification, setMessages, onChangeDynamicMcpConfig, resume, requestPrompt, disabled, customSystemPrompt, appendSystemPrompt, setConversationId]);
+  }, [commands, combinedInitialTools, mainThreadAgentDefinition, debug, initialMcpClients, ideInstallationStatus, dynamicMcpConfig, theme, allowedAgentTypes, store, setAppState, reverify, addNotification, setMessages, onChangeDynamicMcpConfig, resume, requestPrompt, disabled, customSystemPrompt, appendSystemPrompt, fallbackModel, setConversationId]);
 
   // Session backgrounding (Ctrl+B to background/foreground)
   const handleBackgroundQuery = useCallback(() => {

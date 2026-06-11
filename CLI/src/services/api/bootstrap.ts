@@ -15,6 +15,10 @@ import { logError } from '../../utils/log.js'
 import { getAPIProvider } from '../../utils/model/providers.js'
 import { isEssentialTrafficOnly } from '../../utils/privacyLevel.js'
 import { getAPEXCodeUserAgent } from '../../utils/userAgent.js'
+import {
+  persistApexInfrastructureModels,
+  probeApexInfrastructure,
+} from '../apexInfrastructure/9router.js'
 
 const bootstrapResponseSchema = lazySchema(() =>
   z.object({
@@ -113,6 +117,14 @@ async function fetchBootstrapAPI(): Promise<BootstrapResponse | null> {
  */
 export async function fetchBootstrapData(): Promise<void> {
   try {
+    if (getAPIProvider() === '9router') {
+      const result = await probeApexInfrastructure()
+      if (result.status === 'ready') {
+        persistApexInfrastructureModels(result.models)
+      }
+      return
+    }
+
     const response = await fetchBootstrapAPI()
     if (!response) return
 

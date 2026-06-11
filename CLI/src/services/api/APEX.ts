@@ -1594,6 +1594,7 @@ async function* queryModel(
       getMaxOutputTokensForModel(options.model)
 
     const hasThinking =
+      getAPIProvider() !== '9router' &&
       thinkingConfig.type !== 'disabled' &&
       !isEnvTruthy(process.env.APEX_CODE_DISABLE_THINKING)
     let thinking: BetaMessageStreamParams['thinking'] | undefined = undefined

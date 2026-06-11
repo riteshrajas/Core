@@ -61,11 +61,12 @@ function PyintelSetup({ setOAuthStatus }: { setOAuthStatus: (status: OAuthStatus
 
   useEffect(() => {
     let mounted = true;
-    fetch('http://127.0.0.1:11434/')
-      .then(res => res.text())
-      .then(text => {
-        if (mounted && text.includes("Ollama is running")) {
-          setOAuthStatus({ state: 'success', token: 'mock-local-token' });
+    // Check if 9Router is running
+    fetch('http://127.0.0.1:20128/v1/models', { timeout: 3000 })
+      .then(res => {
+        if (mounted && res.ok) {
+          // 9Router is running, auto-succeed
+          setOAuthStatus({ state: 'success', token: 'apex-infrastructure-ready' });
         } else {
           if (mounted) setDetecting(false);
         }
@@ -80,23 +81,19 @@ function PyintelSetup({ setOAuthStatus }: { setOAuthStatus: (status: OAuthStatus
     return (
       <Box flexDirection="column" gap={1} marginTop={1}>
         <Spinner />
-        <Text>Detecting local Ollama...</Text>
+        <Text>Detecting APEX Infrastructure (9Router)...</Text>
       </Box>
     );
   }
 
   return (
     <Box flexDirection="column" gap={1} marginTop={1}>
-      <Text bold={true}>Using Pyintel Foundry</Text>
+      <Text bold={true}>APEX Infrastructure (9Router)</Text>
       <Box flexDirection="column" gap={1}>
-        <Text>Configure your local environment variables for Pyintel Foundry (Ollama, LM Studio API, etc), such as pointing your endpoint to http://localhost:11434.</Text>
-        <Box flexDirection="column" marginTop={1}>
-          <Text bold={true}>Documentation:</Text>
-          <Text>· Ollama: <Link url="https://ollama.com">https://ollama.com</Link></Text>
-          <Text>· LM Studio: <Link url="https://lmstudio.ai">https://lmstudio.ai</Link></Text>
-        </Box>
+        <Text>APEX uses 9Router for all model routing and local LLM support (Ollama, LM Studio, etc).</Text>
+        <Text>9Router must be running to use APEX Code. It will be started automatically if available.</Text>
         <Box marginTop={1}>
-          <Text dimColor={true}>Press <Text bold={true}>Enter</Text> to go back to login options.</Text>
+          <Text dimColor={true}>Setup complete · Proceeding with APEX...</Text>
         </Box>
       </Box>
     </Box>
@@ -120,13 +117,10 @@ export function ConsoleOAuthFlow({
         state: 'ready_to_start'
       };
     }
-    if (forceLoginMethod === 'APEXai' || forceLoginMethod === 'console') {
-      return {
-        state: 'ready_to_start'
-      };
-    }
+    // APEX now uses ONLY Pyintel Foundry / 9Router
+    // Auto-start with pyintel setup flow, skip all other login methods
     return {
-      state: 'idle'
+      state: 'pyintel_setup'
     };
   });
   const [pastedCode, setPastedCode] = useState('');
@@ -173,6 +167,17 @@ export function ConsoleOAuthFlow({
   });
 
   // Handle Enter to continue from platform/pyintel setup
+  // For pyintel, auto-proceed without waiting for user input (APEX Infrastructure is always required)
+  useEffect(() => {
+    if (oauthStatus.state === 'pyintel_setup') {
+      const timer = setTimeout(() => {
+        // Auto-transition to success for pyintel/9Router setup
+        setOAuthStatus({ state: 'success', token: 'apex-infrastructure-ready' });
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [oauthStatus]);
+  
   useKeybinding('confirm:yes', () => {
     setOAuthStatus({
       state: 'idle'
