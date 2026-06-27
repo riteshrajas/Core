@@ -73,10 +73,8 @@ function getDevVersion(baseVersion: string): string {
 }
 
 function getVersionChangelog(): string {
-  return (
-    runCommand(['git', 'log', '--format=%h %s', '-20']) ??
-    'Local development build'
-  )
+  const log = runCommand(['git', 'log', '--format=%h %s', '-n', '1']) ?? 'Local development build';
+  return log.replace(/["\r\n]/g, ' ');
 }
 
 const defaultFeatures = ['VOICE_MODE']

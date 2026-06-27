@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(./cli.exe /tasks-new)",
+      "Bash(./cli.exe --model APEX-opus-4-6 /tasks-new)"
+    ]
+  }
+}
